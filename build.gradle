@@ -58,6 +58,8 @@ sonar {
     property "sonar.projectKey", "Qavrox_sopra-fs25-group-45-server"
     property "sonar.organization", "sopra-fs25-group-45"
     property "sonar.host.url", "https://sonarcloud.io"
+    property "sonar.sources", "src/main"
+    property "sonar.tests", "src/test"
   }
 }
 
