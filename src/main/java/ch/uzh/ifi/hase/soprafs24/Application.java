@@ -29,7 +29,7 @@ public class Application {
     return new WebMvcConfigurer() {
       @Override
       public void addCorsMappings(CorsRegistry registry) {
-        registry.addMapping("/**").allowedOrigins("https://sopra-fs25-group-45-client.vercel.app","http://localhost:3000","https://sopra-fs25-group-45-client-qavroxs-projects.vercel.app","https://sopra-fs25-group-45-client-qavrox-qavroxs-projects.vercel.app").allowedMethods("*");
+        registry.addMapping("/**").allowedOrigins("https://sopra-fs25-group-45-client.vercel.app","http://localhost:3000","https://sopra-fs25-group-45-client-qavroxs-projects.vercel.app").allowedMethods("*");
       }
     };
   }
