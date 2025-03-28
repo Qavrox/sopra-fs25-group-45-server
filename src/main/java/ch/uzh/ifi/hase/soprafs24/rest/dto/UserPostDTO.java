@@ -1,10 +1,14 @@
 package ch.uzh.ifi.hase.soprafs24.rest.dto;
 
+import ch.uzh.ifi.hase.soprafs24.constant.GameType;
+
 public class UserPostDTO {
 
   private String name;
 
   private String username;
+
+  
 
   public String getName() {
     return name;
@@ -21,4 +25,6 @@ public class UserPostDTO {
   public void setUsername(String username) {
     this.username = username;
   }
+
+
 }
