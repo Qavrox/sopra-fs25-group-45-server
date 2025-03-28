@@ -37,10 +37,10 @@ public interface DTOMapper {
 
   @Mapping(source = "id", target = "id")
   @Mapping(source = "password", target = "password")
-  @Mapping(source = "gameType", target = "gameType")
+  @Mapping(source = "isPublic", target = "isPublic")
   Game convertGamePostDTOtoEntity(GamePostDTO gamePostDTO);
 
-  @Mapping(source = "gameType", target = "gameType")
+  @Mapping(source = "isPublic", target = "isPublic")
   @Mapping(source = "id", target = "id")
   @Mapping(source = "password", target = "password")
   GameGetDTO convertEntitytoGameGetDTO(Game game);

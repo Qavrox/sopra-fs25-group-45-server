@@ -1,13 +1,13 @@
 package ch.uzh.ifi.hase.soprafs24.rest.dto;
 
-import ch.uzh.ifi.hase.soprafs24.constant.GameType;
+import ch.uzh.ifi.hase.soprafs24.constant.isPublic;
 
 public class GamePostDTO {
 
 
   private Long id;
   private String password;
-  private GameType gameType;
+  private Boolean isPublic;
 
 
 
@@ -27,11 +27,11 @@ public class GamePostDTO {
     this.password = password;
   }
 
-  public GameType getGameType(){
-    return gameType;
+  public Boolean getIsPublic(){
+    return isPublic;
   }
 
-  public void setGameType(GameType gameType){
-    this.gameType=gameType;
+  public void setIsPublic(Boolean isPublic){
+    this.isPublic=isPublic;
   }
 }

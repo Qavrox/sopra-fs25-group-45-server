@@ -2,7 +2,10 @@ package ch.uzh.ifi.hase.soprafs24.entity;
 import java.io.Serializable;
 import java.util.List;
 import javax.persistence.*;
-import ch.uzh.ifi.hase.soprafs24.constant.GameType;
+
+import org.hibernate.annotations.ColumnDefault;
+
+import ch.uzh.ifi.hase.soprafs24.constant.isPublic;
 
 
 @Entity
@@ -13,8 +16,8 @@ public class Game implements Serializable{
     @GeneratedValue
     private Long id;
 
-    @Column(nullable = false)
-    private GameType gameType;
+    @Column(columnDefinition = "boolean default true")
+    private Boolean isPublic;
 
     @Column(nullable = false)
     private Long pot;
@@ -28,14 +31,14 @@ public class Game implements Serializable{
     @Column(nullable = false)
     private int numberOfPlayers;
 
-    @Column(nullable = false)
+    @OneToMany(mappedBy = "game")
     private List<Player> players;
  
-    @Column(nullable = false)    
-    private List<Spectator> spectators;
+    @OneToMany(mappedBy = "game")
+    private List<Integer> spectators;
 
     @Column(nullable = false)
-    private List<Card> communityCards;
+    private List<Integer> communityCards;
     
     @Column(nullable = false)    
     private int smallBlindIndex;
@@ -59,26 +62,26 @@ public class Game implements Serializable{
     }
 
 
-    public GameType getGameType(){
-        return gameType;
+    public Boolean getIsPublic(){
+        return isPublic;
       }
     
-      public void setGameType(GameType gameType){
-        this.gameType=gameType;
+      public void setIsPublic(Boolean isPublic){
+        this.isPublic=isPublic;
       }
 
     List<Player> getPlayers(){
         return players;
     }
 
-    List<Spectator> getSpectators(){
+    List<Integer> getSpectators(){
         return spectators;
     }
 
     public void addPlayer(Player player){
         this.players.add(player);
     }
-    public void addSpectator(Spectator spectator){
+    public void addSpectator(Integer spectator){
         this.spectators.add(spectator);
     }    
 
