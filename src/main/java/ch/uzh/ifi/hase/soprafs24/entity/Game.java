@@ -58,6 +58,15 @@ public class Game implements Serializable{
         this.id=id;
     }
 
+
+    public GameType getGameType(){
+        return gameType;
+      }
+    
+      public void setGameType(GameType gameType){
+        this.gameType=gameType;
+      }
+
     List<Player> getPlayers(){
         return players;
     }

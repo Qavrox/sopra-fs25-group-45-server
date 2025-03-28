@@ -6,7 +6,7 @@ public class GameGetDTO {
     
   private Long id;
   private String password;
-  private GameType gameTypepe;
+  private GameType gameType;
 
 
   public Long getId() {
@@ -26,11 +26,11 @@ public class GameGetDTO {
   }
 
   public GameType getGameType(){
-    return gameTypepe;
+    return gameType;
   }
 
   public void setGameType(GameType gameType){
-    this.gameTypepe=gameType;
+    this.gameType=gameType;
   }
     
 }
