@@ -2,6 +2,8 @@ package ch.uzh.ifi.hase.soprafs24.entity;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+
 import javax.persistence.*;
 
 import org.hibernate.annotations.ColumnDefault;
@@ -51,7 +53,13 @@ public class Game implements Serializable{
     @Column(nullable = false)
     @ElementCollection
     @CollectionTable(name = "GAME_COMMUNITY_CARDS", joinColumns = @JoinColumn(name = "game_id"))
-    private List<Integer> communityCards;
+    private List<String> cardDeck;
+
+
+    @Column(nullable = false)
+    @ElementCollection
+    @CollectionTable(name = "GAME_COMMUNITY_CARDS", joinColumns = @JoinColumn(name = "game_id"))
+    private List<String> communityCards;
     
     @Column(nullable = true)    
     private int smallBlindIndex;
@@ -138,6 +146,46 @@ public class Game implements Serializable{
     public int getCreatorId(){
         return creatorId;
     }
+
+    public void setGameStatus(GameStatus gameStatus){
+        this.gameStatus=gameStatus;
+    }
+    public GameStatus getGameStatus(){
+        return gameStatus;
+    }
+
+    public void setCardDeck(List<String> cardDeck){
+        this.cardDeck=cardDeck;
+    }
+    public List<String> getCardDeck(){
+        return cardDeck;
+    }
+    public void setCommunityCards(List<String> communityCards){
+        this.communityCards=communityCards;
+    }
+    public List<String> getCommunityCards(){
+        return communityCards;
+    }
+    public void setCallAmount(Long callAmount){
+        this.callAmount=callAmount;
+    }
+    public Long getCallAmount(){
+        return callAmount;
+    }
+    public void setPot(Long pot){
+        this.pot=pot;
+    }
+    public Long getPot(){
+        return pot;
+    }
+
+    public String getRandomCard(){
+        int randomIndex = (int) (Math.random() * cardDeck.size());
+        String randomCard = cardDeck.get(randomIndex);
+        cardDeck.remove(randomIndex);
+        return randomCard;
+    }
+
 
 
 

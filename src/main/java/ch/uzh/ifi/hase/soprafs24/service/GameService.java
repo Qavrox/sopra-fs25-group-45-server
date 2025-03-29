@@ -6,15 +6,19 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException.Forbidden;
 import org.springframework.web.server.ResponseStatusException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 import javax.transaction.Transactional;
 
+import ch.uzh.ifi.hase.soprafs24.constant.GameStatus;
 import ch.uzh.ifi.hase.soprafs24.entity.Game;
 import ch.uzh.ifi.hase.soprafs24.entity.Player;
 import ch.uzh.ifi.hase.soprafs24.entity.User;
 import ch.uzh.ifi.hase.soprafs24.repository.GameRepository;
+import ch.uzh.ifi.hase.soprafs24.repository.PlayerRepository;
 import ch.uzh.ifi.hase.soprafs24.repository.UserRepository;
 
 @Service
@@ -23,12 +27,14 @@ public class GameService {
 
     private final GameRepository gameRepository;
     private final UserRepository userRepository;
+    private final PlayerRepository playerRepository;
 
     @Autowired
     public GameService(@Qualifier("gameRepository") GameRepository gameRepository,
-                       @Qualifier("userRepository") UserRepository userRepository) {
+                       @Qualifier("userRepository") UserRepository userRepository, @Qualifier("playerRepository") PlayerRepository playerRepository) {
         this.gameRepository = gameRepository;
         this.userRepository = userRepository;
+        this.playerRepository = playerRepository;
     }    
 
     
@@ -119,6 +125,107 @@ public class GameService {
         return game;
     }
 
+
+    public Game startRound(Long gameId, String token){
+        Game game = gameRepository.findByid(gameId);
+        if (game == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found");
+        }
+        if (game.getPlayers().size() < 2) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Not enough players to start the game");
+        }
+        
+        game.setGameStatus(GameStatus.READY);
+        game.setStartBlinds();
+        List<String> newDeck = new ArrayList<>();
+        String[] suits = {"H", "D", "C", "S"};
+        String[] ranks = {"2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"};
+        for (String suit : suits) {
+            for (String rank : ranks) {
+                newDeck.add(rank + "" + suit);
+            }
+        }
+        
+        game.setCardDeck(newDeck);
+
+        // Remove cards from players (violently if needed)
+        for (Player player : game.getPlayers()) {
+            List<String> hand = new ArrayList<>();
+            player.setHand(hand);
+            playerRepository.save(player);
+            playerRepository.flush();
+
+        }
+
+        // Remove community cards
+        game.setCommunityCards(new ArrayList<>());
+        
+        gameRepository.save(game);
+        gameRepository.flush();
+        
+
+        return game;
+    }
+    
+    public Game startPreFlop(Long gameId){
+        Game game = gameRepository.findByid(gameId);
+        if (game == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found");
+        }
+        if (game.getGameStatus() != GameStatus.READY) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Game is not in ready phase");
+        }
+
+        game.setGameStatus(GameStatus.PREFLOP);
+        
+        // Give players two cards 
+        for (Player player : game.getPlayers()) {
+            List<String> hand = new ArrayList<>();
+            hand.add(game.getRandomCard());
+            hand.add(game.getRandomCard());
+
+            player.setHand(hand);
+            playerRepository.save(player);
+            playerRepository.flush();
+
+        }
+        gameRepository.save(game);
+        gameRepository.flush();
+
+        
+        return game;
+    }
+
+    public Game placeCommunityCards(Long gameId){
+        Game game = gameRepository.findByid(gameId);
+        if (game == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found");
+        }
+
+        if(!(game.getGameStatus() == GameStatus.PREFLOP || game.getGameStatus() == GameStatus.FLOP || game.getGameStatus() == GameStatus.TURN)){
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Game is not in the right phase");
+        }
+
+        List <String> communityCards = game.getCommunityCards();
+        communityCards.add(game.getRandomCard());
+
+        if(game.getGameStatus() == GameStatus.PREFLOP){
+            game.setGameStatus(GameStatus.FLOP);
+            communityCards.add(game.getRandomCard());
+            communityCards.add(game.getRandomCard());
+        }
+        else if(game.getGameStatus() == GameStatus.FLOP){
+            game.setGameStatus(GameStatus.TURN);
+        }
+        else{
+            game.setGameStatus(GameStatus.RIVER);
+        }
+        
+        game.setCommunityCards(communityCards);
+        gameRepository.save(game);
+        gameRepository.flush();
+        return game;
+    }
 
     
 }
