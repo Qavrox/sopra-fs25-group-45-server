@@ -1,9 +1,11 @@
 package ch.uzh.ifi.hase.soprafs24.rest.mapper;
 
 import ch.uzh.ifi.hase.soprafs24.entity.Game;
+import ch.uzh.ifi.hase.soprafs24.entity.Player;
 import ch.uzh.ifi.hase.soprafs24.entity.User;
+import ch.uzh.ifi.hase.soprafs24.rest.dto.GameCreationPostDTO;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.GameGetDTO;
-import ch.uzh.ifi.hase.soprafs24.rest.dto.GamePostDTO;
+import ch.uzh.ifi.hase.soprafs24.rest.dto.JoinGamePostDTO;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.UserGetDTO;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.UserPostDTO;
 import org.mapstruct.*;
@@ -35,14 +37,20 @@ public interface DTOMapper {
   @Mapping(source = "status", target = "status")
   UserGetDTO convertEntityToUserGetDTO(User user);
 
-  @Mapping(source = "id", target = "id")
+  @Mapping(source = "creatorId", target = "creatorId")
   @Mapping(source = "password", target = "password")
   @Mapping(source = "isPublic", target = "isPublic")
-  Game convertGamePostDTOtoEntity(GamePostDTO gamePostDTO);
+  @Mapping(source = "maximalPlayers", target = "maximalPlayers")
+  @Mapping(source = "startCredit", target = "startCredit")
+  Game convertCreateGameDTOToGameEntity(GameCreationPostDTO gamePostDTO);
 
   @Mapping(source = "isPublic", target = "isPublic")
   @Mapping(source = "id", target = "id")
   @Mapping(source = "password", target = "password")
-  GameGetDTO convertEntitytoGameGetDTO(Game game);
+  @Mapping(source = "maximalPlayers", target = "maximalPlayers")
+  @Mapping(source = "startCredit", target = "startCredit")
+  GameGetDTO convertEntityToGameGetDTO(Game game);
 
+
+  
 }

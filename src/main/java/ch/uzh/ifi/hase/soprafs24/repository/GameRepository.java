@@ -4,7 +4,9 @@ import org.springframework.stereotype.Repository;
 
 import ch.uzh.ifi.hase.soprafs24.entity.Game;
 
-@Repository("userRepository")
+@Repository("gameRepository")
 public interface GameRepository extends JpaRepository<Game, Long> {
+
+    Game findByid(Long id);
 
 }

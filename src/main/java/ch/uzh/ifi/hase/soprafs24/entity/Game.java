@@ -1,11 +1,13 @@
 package ch.uzh.ifi.hase.soprafs24.entity;
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
 import javax.persistence.*;
 
 import org.hibernate.annotations.ColumnDefault;
 
-import ch.uzh.ifi.hase.soprafs24.constant.isPublic;
+import ch.uzh.ifi.hase.soprafs24.constant.GameStatus;
+
 
 
 @Entity
@@ -16,13 +18,17 @@ public class Game implements Serializable{
     @GeneratedValue
     private Long id;
 
-    @Column(columnDefinition = "boolean default true")
+    
+    @Column(nullable = false)
+    public int creatorId;
+
+    @Column(nullable = false)
     private Boolean isPublic;
 
-    @Column(nullable = false)
+    @Column(nullable = true)
     private Long pot;
 
-    @Column(nullable = false)
+    @Column(nullable = true)
     private Long callAmount;
 
     @Column(nullable = true)
@@ -31,23 +37,36 @@ public class Game implements Serializable{
     @Column(nullable = false)
     private int numberOfPlayers;
 
-    @OneToMany(mappedBy = "game")
-    private List<Player> players;
- 
-    @OneToMany(mappedBy = "game")
+    @Column(nullable = true)
+    private GameStatus gameStatus;
+
+    @OneToMany(mappedBy = "game", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Player> players = new ArrayList<>();
+
+    @ElementCollection
+    @CollectionTable(name = "GAME_SPECTATORS", joinColumns = @JoinColumn(name = "game_id"))
+    @Column(name = "spectator_id")    
     private List<Integer> spectators;
 
     @Column(nullable = false)
+    @ElementCollection
+    @CollectionTable(name = "GAME_COMMUNITY_CARDS", joinColumns = @JoinColumn(name = "game_id"))
     private List<Integer> communityCards;
     
-    @Column(nullable = false)    
+    @Column(nullable = true)    
     private int smallBlindIndex;
 
-    @Column(nullable = false)
+    @Column(nullable = true)
     private int bigBlindIndex;
 
+    @Column(nullable = false)
+    private int maximalPlayers;    
+
+    @Column(nullable = false)
+    private Long startCredit;      
+
     public String getPassword(){
-        return this.password;
+        return password;
     }
     public void setPassword(String password){
         this.password=password;
@@ -61,7 +80,6 @@ public class Game implements Serializable{
         this.id=id;
     }
 
-
     public Boolean getIsPublic(){
         return isPublic;
       }
@@ -70,11 +88,11 @@ public class Game implements Serializable{
         this.isPublic=isPublic;
       }
 
-    List<Player> getPlayers(){
+    public List<Player> getPlayers(){
         return players;
     }
 
-    List<Integer> getSpectators(){
+    public List<Integer> getSpectators(){
         return spectators;
     }
 
@@ -95,6 +113,31 @@ public class Game implements Serializable{
 
     }
 
+    public void setStartBlinds(){
+        this.smallBlindIndex=1;
+        this.bigBlindIndex=0;
+    }
+
+    public void setStartCredit(Long startCredit){
+        this.startCredit=startCredit;
+    }
+    public Long getStartCredit(){
+        return startCredit;
+    }
+
+    public void setMaximalPlayers(int maximalPlayers){
+        this.maximalPlayers=maximalPlayers;
+    }
+    public int getMaximalPlayers(){
+        return maximalPlayers;
+    }
+
+    public void setCreatorId(int creatorId){
+        this.creatorId=creatorId;
+    }
+    public int getCreatorId(){
+        return creatorId;
+    }
 
 
 
