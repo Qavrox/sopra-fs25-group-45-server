@@ -46,9 +46,11 @@ public class UserFriendsService {
     public void addFriendRequest(Long userId, User requestUser) {
         UserFriends uf = userFriendsRepository.findById(userId)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "UserFriends not found for userId: " + userId));
+        
         // Check for duplicates (comparing by user ID)
         boolean exists = uf.getFriendRequests().stream()
             .anyMatch(u -> u.getId().equals(requestUser.getId()));
+        
         if (!exists) {
             uf.getFriendRequests().add(requestUser);
             userFriendsRepository.save(uf);
@@ -59,6 +61,7 @@ public class UserFriendsService {
     public void removeFriendRequest(Long userId, Long requestUserId) {
         UserFriends uf = userFriendsRepository.findById(userId)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "UserFriends not found for userId: " + userId));
+        
         uf.getFriendRequests().removeIf(u -> u.getId().equals(requestUserId));
         userFriendsRepository.save(uf);
     }
@@ -68,8 +71,10 @@ public class UserFriendsService {
     public void acceptFriendRequest(Long userId, User requestUser) {
         UserFriends uf = userFriendsRepository.findById(userId)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "UserFriends not found for userId: " + userId));
+        
         // Remove the request; comparison by ID for reliability
         boolean removed = uf.getFriendRequests().removeIf(u -> u.getId().equals(requestUser.getId()));
+        
         if (removed) {
             // Add to friends if not already present
             boolean alreadyFriend = uf.getFriends().stream()
