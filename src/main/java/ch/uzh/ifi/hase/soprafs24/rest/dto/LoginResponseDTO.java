@@ -1,13 +1,15 @@
 package ch.uzh.ifi.hase.soprafs24.rest.dto;
+
 import ch.uzh.ifi.hase.soprafs24.constant.UserLevel;
 import ch.uzh.ifi.hase.soprafs24.constant.UserStatus;
 import java.time.LocalDate;
 
-public class UserGetDTO {
+public class LoginResponseDTO {
 
   private Long id;
   private String name;
   private String username;
+  private String token;
   private UserLevel level;
   private UserStatus status;
   private LocalDate creationDate;
@@ -38,12 +40,12 @@ public class UserGetDTO {
     this.username = username;
   }
 
-  public UserStatus getStatus() {
-    return status;
+  public String getToken() {
+    return token;
   }
 
-  public void setStatus(UserStatus status) {
-    this.status = status;
+  public void setToken(String token) {
+    this.token = token;
   }
 
   public UserLevel getLevel() {
@@ -52,6 +54,14 @@ public class UserGetDTO {
 
   public void setLevel(UserLevel level) {
     this.level = level;
+  }
+
+  public UserStatus getStatus() {
+    return status;
+  }
+
+  public void setStatus(UserStatus status) {
+    this.status = status;
   }
 
   public LocalDate getCreationDate() {
