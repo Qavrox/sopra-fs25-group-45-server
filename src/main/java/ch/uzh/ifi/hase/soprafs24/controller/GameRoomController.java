@@ -67,10 +67,10 @@ public class GameRoomController {
         String token = authenticatorToken.substring(7);
 
         Game game = gameService.joinGame(id, token, gamePostDTO.getPassword());
+        GameGetDTO gameGetDTO = DTOMapper.INSTANCE.convertEntityToGameGetDTO(game);
+        return gameGetDTO;
 
 
-
-        return null;
     }    
 
     
