@@ -2,7 +2,6 @@ package ch.uzh.ifi.hase.soprafs24.rest.dto;
 import ch.uzh.ifi.hase.soprafs24.constant.UserLevel;
 import ch.uzh.ifi.hase.soprafs24.constant.UserStatus;
 import java.time.LocalDate;
-import java.util.List;
 
 public class UserGetDTO {
 
@@ -14,8 +13,6 @@ public class UserGetDTO {
   private LocalDate creationDate;
   private LocalDate birthday;
   private byte[] profileImage;
-  private List<UserGetDTO> friends;
-  private List<UserGetDTO> receivedFriendRequests;
 
   public Long getId() {
     return id;
@@ -80,21 +77,4 @@ public class UserGetDTO {
   public void setProfileImage(byte[] profileImage) {
     this.profileImage = profileImage;
   }
-
-  public List<UserGetDTO> getFriends() {
-    return friends;
-  }
-
-  public void setFriends(List<UserGetDTO> friends) {
-    this.friends = friends;
-  }
-
-  public List<UserGetDTO> getReceivedFriendRequests() {
-    return receivedFriendRequests;
-  }
-
-  public void setReceivedFriendRequests(List<UserGetDTO> receivedFriendRequests) {
-    this.receivedFriendRequests = receivedFriendRequests;
-  }
-  
 }

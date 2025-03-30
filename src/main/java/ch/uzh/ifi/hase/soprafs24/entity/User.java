@@ -54,32 +54,6 @@ public class User implements Serializable {
   @Column
   private byte[] profileImage;
 
-  @ManyToMany
-  @JoinTable(
-      name = "user_friends",
-      joinColumns = @JoinColumn(name = "user_id"),
-      inverseJoinColumns = @JoinColumn(name = "friend_id")
-  )
-  private List<User> friends;
-
-  // Friend requests sent by this user
-  @ManyToMany
-  @JoinTable(
-      name = "friend_requests_sent",
-      joinColumns = @JoinColumn(name = "sender_id"),
-      inverseJoinColumns = @JoinColumn(name = "receiver_id")
-  )
-  private List<User> sentFriendRequests;
-
-  // Friend requests received by this user
-  @ManyToMany
-  @JoinTable(
-      name = "friend_requests_received",
-      joinColumns = @JoinColumn(name = "receiver_id"),
-      inverseJoinColumns = @JoinColumn(name = "sender_id")
-  )
-  private List<User> receivedFriendRequests;
-
   public Long getId() {
     return id;
   }
@@ -144,14 +118,6 @@ public class User implements Serializable {
     this.profileImage = profileImage;
   }
 
-  public List<User> getFriends() {
-    return friends;
-  }
-
-  public void setFriends(List<User> friends) {
-    this.friends = friends;
-  }
-
   public LocalDate getCreationDate() {
     return creationDate;  
   }
@@ -159,28 +125,12 @@ public class User implements Serializable {
   public void setCreationDate(LocalDate creationDate) {
     this.creationDate = creationDate;
   }
-  
+
   public LocalDate getBirthday() {
     return birthday;
   }
 
   public void setBirthday(LocalDate birthday) {
     this.birthday = birthday;
-  }
-
-  public List<User> getSentFriendRequests() {
-    return sentFriendRequests;
-  }
-
-  public void setSentFriendRequests(List<User> sentFriendRequests) {
-    this.sentFriendRequests = sentFriendRequests;
-  }
-
-  public List<User> getReceivedFriendRequests() {
-    return receivedFriendRequests;
-  }
-
-  public void setReceivedFriendRequests(List<User> receivedFriendRequests) {
-    this.receivedFriendRequests = receivedFriendRequests;
   }
 }

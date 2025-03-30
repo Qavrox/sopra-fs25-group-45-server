@@ -12,7 +12,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -42,11 +41,6 @@ public class UserService {
     newUser.setToken(UUID.randomUUID().toString());
     newUser.setStatus(UserStatus.ONLINE);
     checkIfUserExists(newUser);
-    
-    // Initialize empty lists
-    newUser.setFriends(new ArrayList<>());
-    newUser.setSentFriendRequests(new ArrayList<>());
-    newUser.setReceivedFriendRequests(new ArrayList<>());
     newUser.setCreationDate(java.time.LocalDate.now());
     
     // saves the given entity but data is only persisted in the database once
@@ -180,76 +174,4 @@ public class UserService {
     return existingUser;
   }
 
-  public List<User> getFriends(String token) {
-    User user = getUserByToken(token);
-    return user.getFriends();
-  }
-
-  public void sendFriendRequest(Long friendId, String token) {
-    User sender = getUserByToken(token);
-    User receiver = getUserById(friendId);
-    
-    // Check if they are already friends
-    if (sender.getFriends().contains(receiver)) {
-      throw new ResponseStatusException(HttpStatus.CONFLICT, "Users are already friends");
-    }
-    
-    // Check if request already sent
-    if (sender.getSentFriendRequests().contains(receiver)) {
-      throw new ResponseStatusException(HttpStatus.CONFLICT, "Friend request already sent");
-    }
-    
-    // Add to sent/received lists
-    sender.getSentFriendRequests().add(receiver);
-    receiver.getReceivedFriendRequests().add(sender);
-    
-    userRepository.save(sender);
-    userRepository.save(receiver);
-    userRepository.flush();
-  }
-
-  public void acceptFriendRequest(Long friendId, String token) {
-    User receiver = getUserByToken(token);
-    User sender = getUserById(friendId);
-    
-    // Check if request exists
-    if (!receiver.getReceivedFriendRequests().contains(sender)) {
-      throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Friend request not found");
-    }
-    
-    // Add to friends lists
-    receiver.getFriends().add(sender);
-    sender.getFriends().add(receiver);
-    
-    // Remove from request lists
-    receiver.getReceivedFriendRequests().remove(sender);
-    sender.getSentFriendRequests().remove(receiver);
-    
-    userRepository.save(receiver);
-    userRepository.save(sender);
-    userRepository.flush();
-  }
-
-  public void rejectFriendRequest(Long friendId, String token) {
-    User receiver = getUserByToken(token);
-    User sender = getUserById(friendId);
-    
-    // Check if request exists
-    if (!receiver.getReceivedFriendRequests().contains(sender)) {
-      throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Friend request not found");
-    }
-    
-    // Remove from request lists
-    receiver.getReceivedFriendRequests().remove(sender);
-    sender.getSentFriendRequests().remove(receiver);
-    
-    userRepository.save(receiver);
-    userRepository.save(sender);
-    userRepository.flush();
-  }
-
-  public List<User> getFriendRequests(String token) {
-    User user = getUserByToken(token);
-    return user.getReceivedFriendRequests();
-  }
 }
