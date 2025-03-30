@@ -6,7 +6,7 @@ import ch.uzh.ifi.hase.soprafs24.entity.User;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.GameCreationPostDTO;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.GameGetDTO;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.JoinGamePostDTO;
-import ch.uzh.ifi.hase.soprafs24.rest.dto.UserGetDTO;y
+import ch.uzh.ifi.hase.soprafs24.rest.dto.UserGetDTO;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.UserPostDTO;
 
 import ch.uzh.ifi.hase.soprafs24.rest.dto.*;

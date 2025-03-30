@@ -224,6 +224,7 @@ public class GameService {
         game.setCommunityCards(communityCards);
         gameRepository.save(game);
         gameRepository.flush();
+        
         return game;
     }
 
