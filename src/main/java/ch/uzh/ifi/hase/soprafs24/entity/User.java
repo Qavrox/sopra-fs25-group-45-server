@@ -41,9 +41,16 @@ public class User implements Serializable {
   @Column(nullable = false)
   private UserStatus status;
 
-  @OneToOne(cascade = CascadeType.ALL)
-  @PrimaryKeyJoinColumn
+  @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
   private UserFriends friends;
+
+  public UserFriends getFriends() {
+    return friends;
+  }
+
+  public void setFriends(UserFriends friends) {
+    this.friends = friends;
+  }
 
   @Column(nullable = true)
   private UserLevel level;

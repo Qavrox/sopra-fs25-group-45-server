@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
@@ -35,7 +36,7 @@ public class UserFriends implements Serializable {
     }
 
     // Friend Requests: using a join table to map the relationship.
-    @ManyToMany
+    @ManyToMany(cascade = CascadeType.ALL)
     @JoinTable(
         name = "USER_FRIEND_REQUESTS",
         joinColumns = @JoinColumn(name = "user_id"),
@@ -44,7 +45,7 @@ public class UserFriends implements Serializable {
     private List<User> friendRequests = new ArrayList<>();
     
     // Friends
-    @ManyToMany
+    @ManyToMany(cascade = CascadeType.ALL)
     @JoinTable(
         name = "USER_FRIEND_RELATIONS",
         joinColumns = @JoinColumn(name = "user_id"),
