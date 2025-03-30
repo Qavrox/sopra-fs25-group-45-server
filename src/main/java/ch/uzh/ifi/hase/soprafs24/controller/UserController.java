@@ -127,7 +127,6 @@ public class UserController {
 
       List<UserFriendDTO> userFriends = new ArrayList<>();
 
-      // To be implemented
       User user = userService.getUserByToken(authHeader);
 
       for (User friend : userFriendsService.getFriends(user.getId())) {
@@ -144,11 +143,7 @@ public class UserController {
       if (authHeader == null || !authHeader.startsWith("Bearer ")) {
         throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Missing or invalid Authorization header");
       }
-      // TODO: Validate token here
 
-      List<UserFriendDTO> userFriends = new ArrayList<>();
-
-      // To be implemented
       User user = userService.getUserByToken(authHeader);
       User friend = userService.getUserById(friendId);
 
@@ -162,12 +157,10 @@ public class UserController {
       if (authHeader == null || !authHeader.startsWith("Bearer ")) {
         throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Missing or invalid Authorization header");
       }
-      
-      // TODO: Validate token here
         
       // To be implemented
       User user = userService.getUserByToken(authHeader);
-      User friend = userService.getUserById(friend);
+      User friend = userService.getUserById(friendId);
 
       userFriendsService.acceptFriendRequest(user.getId(), friend);
     }
@@ -179,12 +172,10 @@ public class UserController {
       if (authHeader == null || !authHeader.startsWith("Bearer ")) {
         throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Missing or invalid Authorization header");
       }
-      
-      // TODO: Validate token here
 
       // To be implemented
       User user = userService.getUserByToken(authHeader);
-      User friend = userService.getUserById(friend);
+      User friend = userService.getUserById(friendId);
         
       userFriendsService.removeFriendRequest(user.getId(), friend.getId());
     }
