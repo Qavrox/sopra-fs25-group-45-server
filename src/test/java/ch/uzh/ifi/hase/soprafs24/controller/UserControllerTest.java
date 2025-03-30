@@ -3,6 +3,7 @@ package ch.uzh.ifi.hase.soprafs24.controller;
 import ch.uzh.ifi.hase.soprafs24.constant.UserStatus;
 import ch.uzh.ifi.hase.soprafs24.entity.User;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.UserPostDTO;
+import ch.uzh.ifi.hase.soprafs24.service.UserFriendsService;
 import ch.uzh.ifi.hase.soprafs24.service.UserService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -16,7 +17,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.web.server.ResponseStatusException;
-
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import java.util.Collections;
 import java.util.List;
 
@@ -43,6 +44,9 @@ public class UserControllerTest {
   @MockBean
   private UserService userService;
 
+  @MockBean
+  private UserFriendsService userFriendsService;
+
   @Test
   public void givenUsers_whenGetUsers_thenReturnJsonArray() throws Exception {
     // given
@@ -50,18 +54,23 @@ public class UserControllerTest {
     user.setName("Firstname Lastname");
     user.setUsername("firstname@lastname");
     user.setStatus(UserStatus.OFFLINE);
-
+    user.setCreationDate(java.time.LocalDate.now());
+    user.setToken("valid-token");
+  
     List<User> allUsers = Collections.singletonList(user);
-
-    // this mocks the UserService -> we define above what the userService should
-    // return when getUsers() is called
+  
+    // this mocks the UserService -> we define above what the userService should return when getUsers() is called
     given(userService.getUsers()).willReturn(allUsers);
-
+    given(userService.getUserByToken(Mockito.anyString())).willReturn(user);
+  
     // when
-    MockHttpServletRequestBuilder getRequest = get("/users").contentType(MediaType.APPLICATION_JSON);
-
+    MockHttpServletRequestBuilder getRequest = get("/users")
+        .header("Authorization", "Bearer valid-token")
+        .contentType(MediaType.APPLICATION_JSON);
+  
     // then
-    mockMvc.perform(getRequest).andExpect(status().isOk())
+    mockMvc.perform(getRequest)
+        .andExpect(status().isOk())
         .andExpect(jsonPath("$", hasSize(1)))
         .andExpect(jsonPath("$[0].name", is(user.getName())))
         .andExpect(jsonPath("$[0].username", is(user.getUsername())))
@@ -77,25 +86,30 @@ public class UserControllerTest {
     user.setUsername("testUsername");
     user.setToken("1");
     user.setStatus(UserStatus.ONLINE);
-
+    user.setCreationDate(java.time.LocalDate.now());
+  
     UserPostDTO userPostDTO = new UserPostDTO();
     userPostDTO.setName("Test User");
     userPostDTO.setUsername("testUsername");
-
+    userPostDTO.setPassword("password");
+  
     given(userService.createUser(Mockito.any())).willReturn(user);
-
+    given(userService.loginUser(Mockito.any())).willReturn(user);
+  
     // when/then -> do the request + validate the result
     MockHttpServletRequestBuilder postRequest = post("/users")
         .contentType(MediaType.APPLICATION_JSON)
         .content(asJsonString(userPostDTO));
-
+  
     // then
     mockMvc.perform(postRequest)
         .andExpect(status().isCreated())
+        .andExpect(content().contentType(MediaType.APPLICATION_JSON))
         .andExpect(jsonPath("$.id", is(user.getId().intValue())))
         .andExpect(jsonPath("$.name", is(user.getName())))
         .andExpect(jsonPath("$.username", is(user.getUsername())))
-        .andExpect(jsonPath("$.status", is(user.getStatus().toString())));
+        .andExpect(jsonPath("$.status", is(user.getStatus().toString())))
+        .andExpect(jsonPath("$.token", is(user.getToken())));
   }
 
   /**

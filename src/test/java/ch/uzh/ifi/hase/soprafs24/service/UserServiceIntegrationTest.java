@@ -2,6 +2,7 @@ package ch.uzh.ifi.hase.soprafs24.service;
 
 import ch.uzh.ifi.hase.soprafs24.constant.UserStatus;
 import ch.uzh.ifi.hase.soprafs24.entity.User;
+import ch.uzh.ifi.hase.soprafs24.repository.UserFriendsRepository;
 import ch.uzh.ifi.hase.soprafs24.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -26,11 +27,16 @@ public class UserServiceIntegrationTest {
   @Autowired
   private UserRepository userRepository;
 
+  @Qualifier("userFriendsRepository")
+  @Autowired
+  private UserFriendsRepository userFriendsRepository;
+
   @Autowired
   private UserService userService;
 
   @BeforeEach
   public void setup() {
+    userFriendsRepository.deleteAll();
     userRepository.deleteAll();
   }
 
@@ -42,6 +48,8 @@ public class UserServiceIntegrationTest {
     User testUser = new User();
     testUser.setName("testName");
     testUser.setUsername("testUsername");
+    testUser.setPassword("password");
+    testUser.setCreationDate(java.time.LocalDate.now());
 
     // when
     User createdUser = userService.createUser(testUser);
@@ -51,7 +59,7 @@ public class UserServiceIntegrationTest {
     assertEquals(testUser.getName(), createdUser.getName());
     assertEquals(testUser.getUsername(), createdUser.getUsername());
     assertNotNull(createdUser.getToken());
-    assertEquals(UserStatus.OFFLINE, createdUser.getStatus());
+    assertEquals(UserStatus.ONLINE, createdUser.getStatus());
   }
 
   @Test
@@ -61,6 +69,9 @@ public class UserServiceIntegrationTest {
     User testUser = new User();
     testUser.setName("testName");
     testUser.setUsername("testUsername");
+    testUser.setPassword("password");
+    testUser.setCreationDate(java.time.LocalDate.now());
+    
     User createdUser = userService.createUser(testUser);
 
     // attempt to create second user with same username
@@ -69,6 +80,8 @@ public class UserServiceIntegrationTest {
     // change the name but forget about the username
     testUser2.setName("testName2");
     testUser2.setUsername("testUsername");
+    testUser2.setPassword("password");
+    testUser2.setCreationDate(java.time.LocalDate.now());
 
     // check that an error is thrown
     assertThrows(ResponseStatusException.class, () -> userService.createUser(testUser2));
