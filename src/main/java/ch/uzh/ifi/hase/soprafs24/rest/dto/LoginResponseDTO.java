@@ -1,21 +1,20 @@
 package ch.uzh.ifi.hase.soprafs24.rest.dto;
+
 import ch.uzh.ifi.hase.soprafs24.constant.UserLevel;
 import ch.uzh.ifi.hase.soprafs24.constant.UserStatus;
 import java.time.LocalDate;
-import java.util.List;
 
-public class UserGetDTO {
+public class LoginResponseDTO {
 
   private Long id;
   private String name;
   private String username;
+  private String token;
   private UserLevel level;
   private UserStatus status;
   private LocalDate creationDate;
   private LocalDate birthday;
   private byte[] profileImage;
-  private List<UserGetDTO> friends;
-  private List<UserGetDTO> receivedFriendRequests;
 
   public Long getId() {
     return id;
@@ -41,12 +40,12 @@ public class UserGetDTO {
     this.username = username;
   }
 
-  public UserStatus getStatus() {
-    return status;
+  public String getToken() {
+    return token;
   }
 
-  public void setStatus(UserStatus status) {
-    this.status = status;
+  public void setToken(String token) {
+    this.token = token;
   }
 
   public UserLevel getLevel() {
@@ -55,6 +54,14 @@ public class UserGetDTO {
 
   public void setLevel(UserLevel level) {
     this.level = level;
+  }
+
+  public UserStatus getStatus() {
+    return status;
+  }
+
+  public void setStatus(UserStatus status) {
+    this.status = status;
   }
 
   public LocalDate getCreationDate() {
@@ -80,21 +87,4 @@ public class UserGetDTO {
   public void setProfileImage(byte[] profileImage) {
     this.profileImage = profileImage;
   }
-
-  public List<UserGetDTO> getFriends() {
-    return friends;
-  }
-
-  public void setFriends(List<UserGetDTO> friends) {
-    this.friends = friends;
-  }
-
-  public List<UserGetDTO> getReceivedFriendRequests() {
-    return receivedFriendRequests;
-  }
-
-  public void setReceivedFriendRequests(List<UserGetDTO> receivedFriendRequests) {
-    this.receivedFriendRequests = receivedFriendRequests;
-  }
-  
 }
