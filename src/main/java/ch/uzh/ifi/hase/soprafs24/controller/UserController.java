@@ -1,14 +1,20 @@
 package ch.uzh.ifi.hase.soprafs24.controller;
 
 import ch.uzh.ifi.hase.soprafs24.entity.User;
+
 import ch.uzh.ifi.hase.soprafs24.rest.dto.*;
 import ch.uzh.ifi.hase.soprafs24.rest.mapper.DTOMapper;
+import ch.uzh.ifi.hase.soprafs24.service.UserFriendsService;
 import ch.uzh.ifi.hase.soprafs24.service.UserService;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+
 
 /**
  * User Controller
@@ -19,9 +25,11 @@ import java.util.List;
 public class UserController {
 
   private final UserService userService;
+  private final UserFriendsService userFriendsService;
 
-  UserController(UserService userService) {
+  UserController(UserService userService, UserFriendsService userFriendsService) {
     this.userService = userService;
+    this.userFriendsService = userFriendsService;
   }
 
   @GetMapping("/users")
@@ -111,4 +119,84 @@ public class UserController {
     // convert internal representation of user back to API
     return DTOMapper.INSTANCE.convertEntityToUserGetDTO(updatedUser);
   }
+
+  @GetMapping("/friends")
+    @ResponseStatus(HttpStatus.OK)
+    @ResponseBody
+    public List<UserFriendDTO> getFriends(@RequestHeader(value = "Authorization") String authHeader) {
+      if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Missing or invalid Authorization header");
+      }
+
+      List<UserFriendDTO> userFriends = new ArrayList<>();
+
+      User user = userService.getUserByToken(authHeader);
+
+      for (User friend : userFriendsService.getFriends(user.getId())) {
+        userFriends.add(DTOMapper.INSTANCE.convertEntityToUserFriendDTO(friend));
+      }
+
+      return userFriends;
+    }
+    
+    @GetMapping("/friends/requests")
+    public List<UserFriendDTO> friendRequestList(@RequestHeader(value = "Authorization") String authHeader) {
+      if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Missing or invalid Authorization header");
+      }
+
+      User user = userService.getUserByToken(authHeader);
+      List<UserFriendDTO> friends = new ArrayList<UserFriendDTO>();
+
+      for (User friend : userFriendsService.getFriendRequests(user.getId())) {
+        friends.add(DTOMapper.INSTANCE.convertEntityToUserFriendDTO(friend));
+      }
+
+      return friends;
+    }
+    
+
+    @PostMapping("/friends/{friendId}/request")
+    @ResponseStatus(HttpStatus.CREATED)
+    @ResponseBody
+    public void requestFriend(@RequestHeader(value = "Authorization") String authHeader, @PathVariable long friendId) {
+      if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Missing or invalid Authorization header");
+      }
+
+      User user = userService.getUserByToken(authHeader);
+      User friend = userService.getUserById(friendId);
+
+      userFriendsService.addFriendRequest(user, friend);
+    }
+    
+    @PostMapping("/friends/{friendId}/accept")
+    @ResponseStatus(HttpStatus.OK)
+    @ResponseBody
+    public void acceptFriend(@RequestHeader(value = "Authorization") String authHeader, @PathVariable long friendId) {
+      if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Missing or invalid Authorization header");
+      }
+        
+      // To be implemented
+      User user = userService.getUserByToken(authHeader);
+      User friend = userService.getUserById(friendId);
+
+      userFriendsService.acceptFriendRequest(user, friend);
+    }
+
+    @PostMapping("/friends/{friendId}/reject")
+    @ResponseStatus(HttpStatus.OK)
+    @ResponseBody
+    public void rejectFriend(@RequestHeader(value = "Authorization") String authHeader, @PathVariable long friendId) {
+      if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Missing or invalid Authorization header");
+      }
+
+      // To be implemented
+      User user = userService.getUserByToken(authHeader);
+      User friend = userService.getUserById(friendId);
+        
+      userFriendsService.removeFriendRequest(user.getId(), friend.getId());
+    }
 }

@@ -1,6 +1,7 @@
 package ch.uzh.ifi.hase.soprafs24.rest.mapper;
 
 import ch.uzh.ifi.hase.soprafs24.entity.User;
+
 import ch.uzh.ifi.hase.soprafs24.rest.dto.*;
 import org.mapstruct.*;
 import org.mapstruct.factory.Mappers;
@@ -39,6 +40,10 @@ public interface DTOMapper {
   @Mapping(source = "profileImage", target = "profileImage")
   @Mapping(source = "level", target = "level")
   UserGetDTO convertEntityToUserGetDTO(User user);
+
+  @Mapping(source = "id", target = "id")
+  // TODO: fix mapping
+  UserFriendDTO convertEntityToUserFriendDTO(User user);
 
   @Mapping(source = "name", target = "name")
   @Mapping(source = "username", target = "username")
