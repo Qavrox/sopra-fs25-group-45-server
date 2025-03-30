@@ -10,6 +10,7 @@ import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
+import javax.persistence.MapsId;
 import javax.persistence.OneToOne;
 import javax.persistence.Table;
 
@@ -20,9 +21,19 @@ public class UserFriends implements Serializable {
     @Column(nullable = false, unique = true)
     private Long userID;
 
-    @OneToOne(mappedBy = "friends")
+    @OneToOne(optional = false)
+    @MapsId
+    @JoinColumn(name = "userID")
     private User user;
     
+    public User getUser() {
+        return user;
+    }
+
+    public void setUser(User user) {
+        this.user = user;
+    }
+
     // Friend Requests: using a join table to map the relationship.
     @ManyToMany
     @JoinTable(

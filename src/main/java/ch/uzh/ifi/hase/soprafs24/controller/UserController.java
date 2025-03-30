@@ -12,6 +12,9 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+
 
 /**
  * User Controller
@@ -136,6 +139,23 @@ public class UserController {
       return userFriends;
     }
     
+    @GetMapping("/friends/requests")
+    public List<UserFriendDTO> friendRequestList(@RequestHeader(value = "Authorization") String authHeader) {
+      if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Missing or invalid Authorization header");
+      }
+
+      User user = userService.getUserByToken(authHeader);
+      List<UserFriendDTO> friends = new ArrayList<UserFriendDTO>();
+
+      for (User friend : userFriendsService.getFriendRequests(user.getId())) {
+        friends.add(DTOMapper.INSTANCE.convertEntityToUserFriendDTO(friend));
+      }
+
+      return friends;
+    }
+    
+
     @PostMapping("/friends/{friendId}/request")
     @ResponseStatus(HttpStatus.CREATED)
     @ResponseBody
@@ -147,7 +167,7 @@ public class UserController {
       User user = userService.getUserByToken(authHeader);
       User friend = userService.getUserById(friendId);
 
-      userFriendsService.addFriendRequest(user.getId(), friend);
+      userFriendsService.addFriendRequest(user, friend);
     }
     
     @PostMapping("/friends/{friendId}/accept")
@@ -162,7 +182,7 @@ public class UserController {
       User user = userService.getUserByToken(authHeader);
       User friend = userService.getUserById(friendId);
 
-      userFriendsService.acceptFriendRequest(user.getId(), friend);
+      userFriendsService.acceptFriendRequest(user, friend);
     }
 
     @PostMapping("/friends/{friendId}/reject")

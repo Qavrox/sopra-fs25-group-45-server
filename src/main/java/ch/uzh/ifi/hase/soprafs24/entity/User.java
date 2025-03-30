@@ -137,4 +137,13 @@ public class User implements Serializable {
   public void setBirthday(LocalDate birthday) {
     this.birthday = birthday;
   }
+
+  @PostPersist
+  private void ensureFriends() {
+    // automatically generate new friends field
+    if (this.friends == null) {
+          this.friends = new UserFriends();
+          this.friends.setUser(this);
+    }
+  }
 }
