@@ -1,59 +1,21 @@
 package ch.uzh.ifi.hase.soprafs24.helpers;
 
+import ch.uzh.ifi.hase.soprafs24.constant.Card;
+import ch.uzh.ifi.hase.soprafs24.constant.Deck;
+
 import java.util.*;
 
 /**
  * Provides a reasonably simple approximation for the Odds of winning using Monte Carlo simulation
  */
 public class OddsCalculator {
-    // Simple card representation.
-    static class Card {
-        int rank;    // 2-14 (11 = Jack 12 = Queen 13 = King 14 = Ace)
-        char suit;   // 'S', 'H', 'D', 'C'
-
-        public Card(int rank, char suit) {
-            this.rank = rank;
-            this.suit = suit;
-        }
-        
-        @Override
-        public String toString() {
-            return rankToString(rank) + suit;
-        }
-        
-        static String rankToString(int rank) {
-            if (rank <= 10)
-                return String.valueOf(rank);
-            switch (rank) {
-                case 11: return "J";
-                case 12: return "Q";
-                case 13: return "K";
-                case 14: return "A";
-                default: return "";
-            }
-        }
-        
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (!(o instanceof Card)) return false;
-            Card other = (Card) o;
-            return this.rank == other.rank && this.suit == other.suit;
-        }
-        
-        @Override
-        public int hashCode() {
-            return 31 * rank + suit;
-        }
-    }
-
     // Represents the evaluated hand.
     // Categories: 8 = straight flush, 7 = four of a kind, 6 = full house, 
     // 5 = flush, 4 = straight, 3 = three of a kind, 2 = two pair, 
     // 1 = one pair, 0 = high card.
-    static class HandValue implements Comparable<HandValue> {
-        int category;
-        List<Integer> kickers; // Descending order
+    public static class HandValue implements Comparable<HandValue> {
+        public int category;
+        public List<Integer> kickers; // Descending order
 
         public HandValue(int category, List<Integer> kickers) {
             this.category = category;
@@ -74,39 +36,6 @@ public class OddsCalculator {
         }
     }
     
-    // Creates a standard 52-card deck.
-    public static List<Card> createDeck() {
-        List<Card> deck = new ArrayList<>(52);
-        char[] suits = {'S', 'H', 'D', 'C'};
-        for (char suit : suits) {
-            for (int r = 2; r <= 14; r++) {
-                deck.add(new Card(r, suit));
-            }
-        }
-        return deck;
-    }
-    
-    // Parses a card string like "AS" or "TD" into a Card.
-    public static Card parseCard(String s) {
-        s = s.toUpperCase();
-        char suit = s.charAt(s.length() - 1);
-        String rankStr = s.substring(0, s.length() - 1);
-        int rank;
-        if ("A".equals(rankStr))
-            rank = 14;
-        else if ("K".equals(rankStr))
-            rank = 13;
-        else if ("Q".equals(rankStr))
-            rank = 12;
-        else if ("J".equals(rankStr))
-            rank = 11;
-        else if ("T".equals(rankStr))
-            rank = 10;
-        else
-            rank = Integer.parseInt(rankStr);
-        return new Card(rank, suit);
-    }
-    
     // Evaluates a 7-card hand (player's 2 cards + 5 board cards).
     // Uses a simple evaluation method to detect straights, flushes, pairs, etc.
     public static HandValue evaluateHand(List<Card> cards) {
@@ -114,8 +43,8 @@ public class OddsCalculator {
         int[] suitCount = new int[4];   // 0:S, 1:H, 2:D, 3:C
         
         for (Card c : cards) {
-            rankCount[c.rank]++;
-            suitCount[suitToIndex(c.suit)]++;
+            rankCount[c.getRank().getValue()]++;
+            suitCount[Card.suitToIndex(c.getSuitChar())]++;
         }
         
         // Check for flush.
@@ -151,11 +80,11 @@ public class OddsCalculator {
         // Check for straight flush.
         int straightFlushHigh = 0;
         if (isFlush) {
-            char flushSuit = indexToSuit(flushSuitIndex);
+            char flushSuit = Card.indexToSuit(flushSuitIndex);
             int[] flushRankCount = new int[15];
             for (Card c : cards) {
-                if (c.suit == flushSuit)
-                    flushRankCount[c.rank]++;
+                if (c.getSuitChar() == flushSuit)
+                    flushRankCount[c.getRank().getValue()]++;
             }
             consecutive = 0;
             candidateHigh = 0;
@@ -207,11 +136,11 @@ public class OddsCalculator {
         
         // Flush.
         if (isFlush) {
-            char flushSuit = indexToSuit(flushSuitIndex);
+            char flushSuit = Card.indexToSuit(flushSuitIndex);
             List<Integer> flushCards = new ArrayList<>();
             for (Card c : cards) {
-                if (c.suit == flushSuit)
-                    flushCards.add(c.rank);
+                if (c.getSuitChar() == flushSuit)
+                    flushCards.add(c.getRank().getValue());
             }
             flushCards.sort(Collections.reverseOrder());
             List<Integer> kickers = flushCards.subList(0, Math.min(5, flushCards.size()));
@@ -293,26 +222,6 @@ public class OddsCalculator {
         return new HandValue(0, highCards);
     }
     
-    private static int suitToIndex(char suit) {
-        switch (suit) {
-            case 'S': return 0;
-            case 'H': return 1;
-            case 'D': return 2;
-            case 'C': return 3;
-            default: return -1;
-        }
-    }
-    
-    private static char indexToSuit(int index) {
-        switch (index) {
-            case 0: return 'S';
-            case 1: return 'H';
-            case 2: return 'D';
-            case 3: return 'C';
-            default: return ' ';
-        }
-    }
-    
     /**
      * Monte Carlo simulation to estimate winning odds.
      * Instead of enumerating every possible outcome, we sample random deals.
@@ -326,22 +235,18 @@ public class OddsCalculator {
     public static double calculateOdds(String[] handStr, String[] boardStr, int numOpponents, int iterations) {
         List<Card> playerHand = new ArrayList<>();
         for (String s : handStr) {
-            playerHand.add(parseCard(s));
+            playerHand.add(Card.fromShortString(s));
         }
         List<Card> board = new ArrayList<>();
         for (String s : boardStr) {
-            board.add(parseCard(s));
+            board.add(Card.fromShortString(s));
         }
         
         // Build deck excluding known cards.
         Set<Card> known = new HashSet<>();
         known.addAll(playerHand);
         known.addAll(board);
-        List<Card> deck = new ArrayList<>();
-        for (Card card : createDeck()) {
-            if (!known.contains(card))
-                deck.add(card);
-        }
+        List<Card> deck = Deck.createDeckExcluding(known);
         
         int missingBoard = 5 - board.size();
         Random rng = new Random();
@@ -372,7 +277,7 @@ public class OddsCalculator {
             // Deal opponent hands sequentially.
             HandValue bestOpp = null;
             int tiedOpponents = 0;
-            int offset = missingBoard; // opponents’ cards start right after the board completions.
+            int offset = missingBoard; // opponents' cards start right after the board completions.
             for (int opp = 0; opp < numOpponents; opp++) {
                 List<Card> oppHand = new ArrayList<>(2);
                 oppHand.add(simDeck[offset + opp * 2]);
