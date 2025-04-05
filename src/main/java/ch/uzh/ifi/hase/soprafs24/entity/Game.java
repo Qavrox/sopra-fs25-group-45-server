@@ -8,6 +8,8 @@ import javax.persistence.*;
 
 import org.hibernate.annotations.ColumnDefault;
 
+import ch.uzh.ifi.hase.soprafs24.constant.Card;
+import ch.uzh.ifi.hase.soprafs24.constant.Deck;
 import ch.uzh.ifi.hase.soprafs24.constant.GameStatus;
 
 
@@ -179,19 +181,70 @@ public class Game implements Serializable{
         return pot;
     }
 
-    public String getRandomCard(){
-        int randomIndex = (int) (Math.random() * cardDeck.size());
-        String randomCard = cardDeck.get(randomIndex);
-        cardDeck.remove(randomIndex);
-        return randomCard;
+    /**
+     * Get a Deck object from the stored cardDeck strings
+     */
+    public Deck getDeck() {
+        if (cardDeck == null) {
+            cardDeck = new ArrayList<>();
+        }
+        return Deck.fromStringList(cardDeck);
+    }
+    
+    /**
+     * Save a Deck object to the cardDeck strings
+     */
+    public void saveDeck(Deck deck) {
+        this.cardDeck = deck.toStringList();
+    }
+    
+    /**
+     * Get community cards as Card objects
+     */
+    public List<Card> getCommunityCardsAsObjects() {
+        List<Card> cards = new ArrayList<>();
+        if (communityCards != null) {
+            for (String cardStr : communityCards) {
+                cards.add(Card.fromShortString(cardStr));
+            }
+        }
+        return cards;
+    }
+    
+    /**
+     * Add a Card to community cards
+     */
+    public void addCommunityCard(Card card) {
+        if (communityCards == null) {
+            communityCards = new ArrayList<>();
+        }
+        communityCards.add(card.toShortString());
+    }
+    
+    /**
+     * Draw a random card from the deck
+     */
+    public Card drawRandomCard() {
+        Deck deck = getDeck();
+        Card card = deck.drawCard();
+        saveDeck(deck);
+        return card;
     }
 
-
-
-
-
-
-
-
+    /**
+     * Initialize a new shuffled deck
+     */
+    public void initializeShuffledDeck() {
+        Deck deck = new Deck();
+        deck.shuffle();
+        this.cardDeck = deck.toStringList();
+    }
     
+    /**
+     * For backward compatibility
+     */
+    public String getRandomCard() {
+        Card card = drawRandomCard();
+        return card.toShortString();
+    }   
 }
