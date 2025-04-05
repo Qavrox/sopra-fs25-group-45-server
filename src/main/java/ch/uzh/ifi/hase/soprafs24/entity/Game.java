@@ -2,11 +2,8 @@ package ch.uzh.ifi.hase.soprafs24.entity;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 import javax.persistence.*;
-
-import org.hibernate.annotations.ColumnDefault;
 
 import ch.uzh.ifi.hase.soprafs24.constant.Card;
 import ch.uzh.ifi.hase.soprafs24.constant.Deck;
@@ -52,13 +49,12 @@ public class Game implements Serializable{
     @Column(name = "spectator_id")    
     private List<Integer> spectators;
 
-    @Column(nullable = false)
+    @Column(name = "card", nullable = false)
     @ElementCollection
-    @CollectionTable(name = "GAME_COMMUNITY_CARDS", joinColumns = @JoinColumn(name = "game_id"))
+    @CollectionTable(name = "GAME_CARD_DECK", joinColumns = @JoinColumn(name = "game_id"))
     private List<String> cardDeck;
 
-
-    @Column(nullable = false)
+    @Column(name = "card", nullable = false)
     @ElementCollection
     @CollectionTable(name = "GAME_COMMUNITY_CARDS", joinColumns = @JoinColumn(name = "game_id"))
     private List<String> communityCards;
@@ -108,6 +104,7 @@ public class Game implements Serializable{
 
     public void addPlayer(Player player){
         this.players.add(player);
+        this.numberOfPlayers = this.players.size();
     }
     public void addSpectator(Integer spectator){
         this.spectators.add(spectator);
@@ -247,4 +244,17 @@ public class Game implements Serializable{
         Card card = drawRandomCard();
         return card.toShortString();
     }   
+
+    public void removePlayer(Player player) {
+        this.players.remove(player);
+        this.numberOfPlayers = this.players.size();
+    }
+
+    public int getNumberOfPlayers() {
+        return numberOfPlayers;
+    }
+
+    public void setNumberOfPlayers(int numberOfPlayers) {
+        this.numberOfPlayers = numberOfPlayers;
+    }
 }

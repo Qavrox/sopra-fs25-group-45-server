@@ -23,6 +23,10 @@ public class Player {
         this.game = game;
     }
 
+    protected Player() {
+        // This empty constructor is needed by JPA (stupid ass shit)
+    }
+
     @Id
     @GeneratedValue
     private Long id;
