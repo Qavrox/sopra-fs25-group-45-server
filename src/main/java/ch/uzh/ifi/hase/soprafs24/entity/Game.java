@@ -41,13 +41,18 @@ public class Game implements Serializable{
     @Column(nullable = true)
     private GameStatus gameStatus;
 
+    @Column(nullable = false)
+    private int smallBlind;
+
+    @Column(nullable = false)
+    private int bigBlind;
+
+    @Column(nullable = false)
+    private int smallBlindIndex;
+
     @OneToMany(mappedBy = "game", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Player> players = new ArrayList<>();
 
-    @ElementCollection
-    @CollectionTable(name = "GAME_SPECTATORS", joinColumns = @JoinColumn(name = "game_id"))
-    @Column(name = "spectator_id")    
-    private List<Integer> spectators;
 
     @Column(name = "card", nullable = false)
     @ElementCollection
@@ -58,12 +63,7 @@ public class Game implements Serializable{
     @ElementCollection
     @CollectionTable(name = "GAME_COMMUNITY_CARDS", joinColumns = @JoinColumn(name = "game_id"))
     private List<String> communityCards;
-    
-    @Column(nullable = true)    
-    private int smallBlindIndex;
 
-    @Column(nullable = true)
-    private int bigBlindIndex;
 
     @Column(nullable = false)
     private int maximalPlayers;    
@@ -98,17 +98,12 @@ public class Game implements Serializable{
         return players;
     }
 
-    public List<Integer> getSpectators(){
-        return spectators;
-    }
+
 
     public void addPlayer(Player player){
         this.players.add(player);
         this.numberOfPlayers = this.players.size();
-    }
-    public void addSpectator(Integer spectator){
-        this.spectators.add(spectator);
-    }    
+    } 
 
     public void raisePot(Long amount){
         this.pot+=amount;
@@ -116,13 +111,19 @@ public class Game implements Serializable{
 
     public void rotateBlinds(){
         this.smallBlindIndex=(this.smallBlindIndex + 1)%(this.numberOfPlayers);
-        this.bigBlindIndex=(bigBlindIndex + 1)%(this.numberOfPlayers);
 
     }
 
     public void setStartBlinds(){
         this.smallBlindIndex=1;
-        this.bigBlindIndex=0;
+    }
+
+    public int getSmallBlindIndex(){
+        return smallBlindIndex;
+    }
+
+    public void setSmallBlindIndex(int smallBlindIndex){
+        this.smallBlindIndex=smallBlindIndex;
     }
 
     public void setStartCredit(Long startCredit){
@@ -256,5 +257,19 @@ public class Game implements Serializable{
 
     public void setNumberOfPlayers(int numberOfPlayers) {
         this.numberOfPlayers = numberOfPlayers;
+    }
+
+    public int getSmallBlind() {
+        return smallBlind;
+    }
+    public void setSmallBlind(int smallBlind) {
+        this.smallBlind = smallBlind;
+    }   
+
+    public int getBigBlind() {
+        return bigBlind;
+    }
+    public void setBigBlind(int bigBlind) {
+        this.bigBlind = bigBlind;
     }
 }

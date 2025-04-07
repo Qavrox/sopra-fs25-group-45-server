@@ -7,6 +7,8 @@ public class GameCreationPostDTO {
     private boolean isPublic;
     private int maximalPlayers;
     private int startCredit;
+    private int smallBlind;
+    private int bigBlind;
 
 
     
@@ -39,6 +41,21 @@ public class GameCreationPostDTO {
     }
     public void setStartCredit(int startCredit) {
         this.startCredit = startCredit;
+    }
+
+    public int getSmallBlind() {
+        return smallBlind;
+    }   
+
+    public void setSmallBlind(int smallBlind) {
+        this.smallBlind = smallBlind;
+    }
+    public int getBigBlind() {
+        return bigBlind;
+    }
+
+    public void setBigBlind(int bigBlind) {
+        this.bigBlind = bigBlind;
     }
     
 }

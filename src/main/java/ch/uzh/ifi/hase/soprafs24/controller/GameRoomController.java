@@ -9,9 +9,12 @@ import org.springframework.web.bind.annotation.*;
 import ch.uzh.ifi.hase.soprafs24.rest.mapper.DTOMapper;
 import ch.uzh.ifi.hase.soprafs24.service.GameService;
 import ch.uzh.ifi.hase.soprafs24.entity.Game;
+import ch.uzh.ifi.hase.soprafs24.repository.UserRepository;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.GameCreationPostDTO;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.GameGetDTO;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.JoinGamePostDTO;
+import ch.uzh.ifi.hase.soprafs24.service.Authenticator;
+import ch.uzh.ifi.hase.soprafs24.repository.GameRepository;
 
 @RestController
 public class GameRoomController {
@@ -26,10 +29,12 @@ public class GameRoomController {
     @PostMapping("/games")
     @ResponseStatus(HttpStatus.CREATED)
     @ResponseBody
-    public GameGetDTO createAGame(@RequestBody GameCreationPostDTO gamePostDTO){
+    public GameGetDTO createAGame(@RequestHeader("Authorization") String authenticatorToken, @RequestBody GameCreationPostDTO gamePostDTO){
 
+        String token = authenticatorToken.substring(7);
+        // Check if the token is valid
         Game newGame = DTOMapper.INSTANCE.convertCreateGameDTOToGameEntity(gamePostDTO);
-        gameService.createNewGame(newGame);
+        gameService.createNewGame(newGame, token);
         GameGetDTO newGameGetDTO = DTOMapper.INSTANCE.convertEntityToGameGetDTO(newGame);
 
         return newGameGetDTO;
@@ -39,7 +44,9 @@ public class GameRoomController {
     @ResponseStatus(HttpStatus.OK)
     @ResponseBody
     public List<GameGetDTO> getAllPublicGames(@RequestHeader("Authorization") String authenticatorToken){
-        List<Game> allGames = gameService.getAllPublicGames();
+
+        String token = authenticatorToken.substring(7);
+        List<Game> allGames = gameService.getAllPublicGames(token);
         List<GameGetDTO> allGamesGetDTO = new ArrayList<>();
         for (Game game : allGames) {
             GameGetDTO gameGetDTO = DTOMapper.INSTANCE.convertEntityToGameGetDTO(game);

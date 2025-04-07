@@ -1,0 +1,836 @@
+openapi: 3.0.3
+info:
+  title: PokerMaster Arena API
+  version: "1.0.0"
+  description: >
+    REST API for PokerMaster Arena, an online Texas Hold’em platform.
+    This API supports user authentication, profile management, game room creation/joining,
+    in-game actions, spectator mode, game analytics, AI probability calculations, friend management,
+    and user preferences.
+servers:
+  - url: https://api.pokermasterarena.com/v1
+
+paths:
+  /auth/login:
+    post:
+      summary: User login
+      description: Authenticate user credentials and return a bearer token.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Successful login; returns a bearer token and user profile.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '400':
+          description: Invalid credentials or request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/logout:
+    post:
+      summary: User logout
+      description: Logs out the authenticated user.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Successfully logged out.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '401':
+          description: Unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /users:
+    get:
+      summary: List all users
+      description: Retrieve a list of all registered users.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: A list of user summaries.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserSummary'
+        '401':
+          description: Unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /users/{userId}:
+    get:
+      summary: Get user profile
+      description: Retrieve detailed profile information for a specific user.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: User profile retrieved.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+        '401':
+          description: Unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: User not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      summary: Update user profile
+      description: Allows an authenticated user to update their own profile.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserProfileUpdate'
+      responses:
+        '200':
+          description: Profile updated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+        '400':
+          description: Invalid request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden (attempt to update another user's profile).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /friends:
+    get:
+      summary: Get friend list
+      description: Retrieve the authenticated user's friend list.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of friends.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserSummary'
+        '401':
+          description: Unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /friends/{friendId}/request:
+    post:
+      summary: Send friend request
+      description: Send a friend request to another user.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: friendId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '201':
+          description: Friend request sent.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '400':
+          description: Request already exists or invalid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /friends/{friendId}/accept:
+    post:
+      summary: Accept friend request
+      description: Accept a pending friend request.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: friendId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Friend request accepted.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '400':
+          description: No pending friend request found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /friends/{friendId}/reject:
+    post:
+      summary: Reject friend request
+      description: Reject a pending friend request.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: friendId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Friend request rejected.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '400':
+          description: No pending friend request found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /games:
+    post:
+      summary: Create a game room
+      description: >
+        Create a new game room.
+        For private games a password is required.
+        The creator specifies blind levels, starting chips, and maximum players (2-10).
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GameCreationRequest'
+      responses:
+        '201':
+          description: Game room created successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Game'
+        '400':
+          description: Invalid request parameters.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    get:
+      summary: List public game rooms
+      description: Retrieve all available public game rooms.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: A list of public game rooms.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Game'
+        '401':
+          description: Unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /games/{gameId}:
+    get:
+      summary: Get game details
+      description: Retrieve detailed information about a specific game room.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: gameId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Game details.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Game'
+        '401':
+          description: Unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Game not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+                
+    delete:
+      summary: Game room is deleted.
+      description: A game room is deleted, because it has fewer than 2 players.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: gameId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Game deleted.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '404':
+          description: Game not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      
+
+  /games/{gameId}/join:
+    post:
+      summary: Join a game room
+      description: Join a game room by providing the game ID and password.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: gameId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                password:
+                  type: string
+              required:
+                - password
+      responses:
+        '200':
+          description: Successfully joined the game room.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '400':
+          description: Incorrect password or invalid game state.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+                
+    delete:
+      summary: A player leaves the game room.
+      description: A player leaves the game room of the given game room id. If there remain more than two players in the room, the game may proceed, otherwise the game room is deleted.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: gameId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Player deleted.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '404':
+          description: Game not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'                      
+
+  /games/{gameId}/actions:
+    post:
+      summary: Submit a game action
+      description: >
+        Submit an in-game action (check, bet, call, raise, or fold).
+        The request body must include the user ID and the action type.
+        For bet/raise actions, an amount should be provided.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: gameId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GameActionRequest'
+      responses:
+        '200':
+          description: Action processed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '400':
+          description: Invalid action or parameters.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /games/{gameId}/results:
+    get:
+      summary: Retrieve game results and analysis
+      description: Retrieve the winner, winning hand, and game statistics for a completed game.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: gameId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Game results retrieved.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameResults'
+        '401':
+          description: Unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Game not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+                
+  /games/{gameId}/newround:
+    post:
+      summary: Start a new round
+      description: Start a new round of poker by placing new cards and rotating the blinds.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: gameId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: New game round returned.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NewRoundResponse'
+        '401':
+          description: Unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      
+      
+  /games/{gameId}/probability:
+    get:
+      summary: Get win probability
+      description: Retrieve the win probability for the authenticated user based on the current game state.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: gameId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Probability calculation returned.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProbabilityResponse'
+        '401':
+          description: Unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /users/{userId}/preferences:
+    put:
+      summary: Update game preferences
+      description: Update user preferences such as auto-fold and auto-call.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PreferencesUpdate'
+      responses:
+        '200':
+          description: Preferences updated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Preferences'
+        '400':
+          description: Invalid request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden (attempt to update another user's preferences).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    LoginRequest:
+      type: object
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+      required:
+        - username
+        - password
+
+    LoginResponse:
+      type: object
+      properties:
+        token:
+          type: string
+          description: Bearer token for use in Authorization header.
+        user:
+          $ref: '#/components/schemas/UserProfile'
+
+    MessageResponse:
+      type: object
+      properties:
+        message:
+          type: string
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          
+    NewRoundResponse:
+      type: object
+      properties:
+        error:
+          type: string
+
+    UserSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+        online:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        birthday:
+          type: string
+          format: date
+          
+    Player:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        gameId:
+          type: integer
+        credit:
+          type: integer
+        hand:
+          type: array
+          items:
+            type: string
+
+
+          
+    UserProfile:
+      type: object
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+        displayName:
+          type: string
+        avatarUrl:
+          type: string
+        experienceLevel:
+          type: string
+          enum: [Beginner, Intermediate, Expert]
+        birthday:
+          type: string
+          format: date
+        createdAt:
+          type: string
+          format: date-time
+        online:
+          type: boolean
+
+    UserProfileUpdate:
+      type: object
+      properties:
+        displayName:
+          type: string
+        avatarUrl:
+          type: string
+        experienceLevel:
+          type: string
+          enum: [Beginner, Intermediate, Expert]
+        birthday:
+          type: string
+          format: date
+
+    GameCreationRequest:
+      type: object
+      properties:
+        isPublic:
+          type: boolean
+          description: Indicates if the game room is private.
+        password:
+          type: string
+          description: Required if isPublic is false.
+        smallBlind:
+          type: number
+        bigBlind:
+          type: number
+        startCredit:
+          type: number
+        maximalPlayers:
+          type: integer
+          minimum: 2
+          maximum: 10
+      required:
+        - isPublic
+        - startCredit
+        - maximalPlayers
+
+    Game:
+      type: object
+      properties:
+        id:
+          type: integer
+        isPublic:
+          type: boolean
+        smallBlind:
+          type: number
+        bigBlind:
+          type: number
+        smalllBlindIndex:
+          type: integer
+        startCredit:
+          type: number
+        maximalPlayers:
+          type: integer
+        pot:
+          type: integer
+        callAmount:
+          type: integer
+        players:
+          type: array
+          items:
+            $ref: '#/components/schemas/Player'
+        status:
+          type: string
+          enum: [waiting, in-progress, finished]
+        createdAt:
+          type: string
+          format: date-time
+        
+
+    GameActionRequest:
+      type: object
+      properties:
+        userId:
+          type: integer
+        action:
+          type: string
+          enum: [check, bet, call, raise, fold]
+        amount:
+          type: number
+          description: Required for bet and raise actions.
+      required:
+        - userId
+        - action
+
+    GameResults:
+      type: object
+      properties:
+        winner:
+          $ref: '#/components/schemas/Player'
+        winningHand:
+          type: string
+        statistics:
+          type: object
+          properties:
+            participationRate:
+              type: number
+            potsWon:
+              type: number
+
+    ProbabilityResponse:
+      type: object
+      properties:
+        probability:
+          type: number
+          description: Win probability as a percentage.
+
+    PreferencesUpdate:
+      type: object
+      properties:
+        autoCall:
+          type: boolean
+
+    Preferences:
+      type: object
+      properties:
+        autoCall:
+          type: boolean
+
+
+security:
+  - bearerAuth: []

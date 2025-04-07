@@ -20,6 +20,7 @@ import ch.uzh.ifi.hase.soprafs24.entity.User;
 import ch.uzh.ifi.hase.soprafs24.repository.GameRepository;
 import ch.uzh.ifi.hase.soprafs24.repository.PlayerRepository;
 import ch.uzh.ifi.hase.soprafs24.repository.UserRepository;
+import ch.uzh.ifi.hase.soprafs24.service.Authenticator;
 
 @Service
 @Transactional
@@ -28,6 +29,7 @@ public class GameService {
     private final GameRepository gameRepository;
     private final UserRepository userRepository;
     private final PlayerRepository playerRepository;
+    private final Authenticator authenticator;
 
     @Autowired
     public GameService(@Qualifier("gameRepository") GameRepository gameRepository,
@@ -35,10 +37,11 @@ public class GameService {
         this.gameRepository = gameRepository;
         this.userRepository = userRepository;
         this.playerRepository = playerRepository;
+        this.authenticator = new Authenticator(userRepository, gameRepository);
     }    
 
     
-    public Game createNewGame(Game newgame){
+    public Game createNewGame(Game newgame, String token){
 
         if(newgame.getMaximalPlayers() < 2 || newgame.getMaximalPlayers() > 10){
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Number of players must be between 2 and 10");
@@ -56,6 +59,8 @@ public class GameService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Creator ID must not be null");
         }
 
+        authenticator.checkTokenValidity(token);
+
         newgame = gameRepository.save(newgame);
         gameRepository.flush();
 
@@ -65,27 +70,27 @@ public class GameService {
 
     public Game joinGame(Long gameId, String userToken, String password){
 
+        //Check if the token is valid
+        authenticator.checkTokenValidity(userToken);
+
+
         Game jointGame = gameRepository.findByid(gameId);
         if (jointGame == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found");
         }
         if(!(jointGame.getIsPublic())){
             if(!(Objects.equals(jointGame.getPassword(), password))){
-                System.out.println("Input password: " + password);
-                System.out.println("Game password: " + jointGame.getPassword());
                 throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Wrong password. Entry to game DENIED.");
             }
         }
         //Password checked OR its public
         User user = userRepository.findByToken(userToken);
-        if (user == null) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User not found");
-        }
+
         if (jointGame.getPlayers().size() >= jointGame.getMaximalPlayers()) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Game is full. Entry to game DENIED.");
         }
+        
         List<String> hand = new ArrayList<>();
-        hand.add("0");
         Player jointPlayer = new Player(user.getId(), hand, jointGame);
         jointGame.addPlayer(jointPlayer);
 
@@ -93,7 +98,10 @@ public class GameService {
     }
 
     
-    public List<Game> getAllPublicGames() {
+    public List<Game> getAllPublicGames(String token) {
+        // Check if the token is valid
+        authenticator.checkTokenValidity(token);
+
         List<Game> allGames = gameRepository.findAll();
         List<Game> publicGames = new ArrayList<>();
 
@@ -106,10 +114,13 @@ public class GameService {
     }
     
     public Game getGameById(Long id, String authenticatorToken) {
+
         Game game = gameRepository.findByid(id);
         if (game == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found");
         }
+
+        // Check if the token is the same as any of the players in the game (This is not the same as checkTokenValidity, but it indirectly checks the validity of the token)
         if(!(game.getIsPublic())){
             User user = userRepository.findByToken(authenticatorToken);
             List<Player> players = game.getPlayers();
