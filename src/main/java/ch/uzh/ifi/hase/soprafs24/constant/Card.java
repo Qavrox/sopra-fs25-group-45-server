@@ -51,6 +51,7 @@ public class Card implements Serializable {
             case KING: rankSymbol = "K"; break;
             case QUEEN: rankSymbol = "Q"; break;
             case JACK: rankSymbol = "J"; break;
+            case TEN: rankSymbol = "T"; break;
             default: rankSymbol = String.valueOf(rank.getValue());
         }
         
@@ -81,6 +82,7 @@ public class Card implements Serializable {
             case 'K': rank = Rank.KING; break;
             case 'Q': rank = Rank.QUEEN; break;
             case 'J': rank = Rank.JACK; break;
+            case 'T': rank = Rank.TEN; break;
             case '1': // 10 is a special case with two chars
                 if (cardStr.length() < 3 || cardStr.charAt(1) != '0') {
                     throw new IllegalArgumentException("Invalid rank: " + rankChar);
@@ -106,5 +108,35 @@ public class Card implements Serializable {
         }
         
         return new Card(suit, rank);
+    }
+    
+    public char getSuitChar() {
+        switch (suit) {
+            case HEARTS: return 'H';
+            case DIAMONDS: return 'D';
+            case CLUBS: return 'C';
+            case SPADES: return 'S';
+            default: return ' ';
+        }
+    }
+    
+    public static int suitToIndex(char suit) {
+        switch (suit) {
+            case 'S': return 0;
+            case 'H': return 1;
+            case 'D': return 2;
+            case 'C': return 3;
+            default: return -1;
+        }
+    }
+    
+    public static char indexToSuit(int index) {
+        switch (index) {
+            case 0: return 'S';
+            case 1: return 'H';
+            case 2: return 'D';
+            case 3: return 'C';
+            default: return ' ';
+        }
     }
 }
