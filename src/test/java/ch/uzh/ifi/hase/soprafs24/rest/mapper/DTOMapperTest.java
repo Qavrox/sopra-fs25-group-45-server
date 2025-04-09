@@ -1,9 +1,13 @@
 package ch.uzh.ifi.hase.soprafs24.rest.mapper;
 
+import ch.uzh.ifi.hase.soprafs24.constant.GameStatus;
 import ch.uzh.ifi.hase.soprafs24.constant.UserStatus;
+import ch.uzh.ifi.hase.soprafs24.entity.Game;
 import ch.uzh.ifi.hase.soprafs24.entity.User;
+import ch.uzh.ifi.hase.soprafs24.rest.dto.GameCreationPostDTO;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.UserGetDTO;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.UserPostDTO;
+import ch.uzh.ifi.hase.soprafs24.rest.dto.GameGetDTO;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -46,5 +50,61 @@ public class DTOMapperTest {
     assertEquals(user.getName(), userGetDTO.getName());
     assertEquals(user.getUsername(), userGetDTO.getUsername());
     assertEquals(user.getStatus(), userGetDTO.getStatus());
+  }
+
+  @Test
+  public void testGetGameFromUserPostDTOToGameEntity() {
+
+        
+    GameCreationPostDTO gamePostDTO = new GameCreationPostDTO();
+    gamePostDTO.setCreatorId(1);
+    gamePostDTO.setPublic(true);
+    gamePostDTO.setMaximalPlayers(5);
+    gamePostDTO.setStartCredit(1000);
+    gamePostDTO.setSmallBlind(10);
+    gamePostDTO.setBigBlind(20);
+
+
+    // MAP -> Create user
+    Game game = DTOMapper.INSTANCE.convertCreateGameDTOToGameEntity(gamePostDTO);
+
+    // check content
+    assertEquals(gamePostDTO.getCreatorId(), game.getCreatorId());
+    assertEquals(gamePostDTO.getIsPublic(), game.getIsPublic());
+    assertEquals(gamePostDTO.getMaximalPlayers(), game.getMaximalPlayers());
+    assertEquals(gamePostDTO.getStartCredit(), game.getStartCredit());
+    assertEquals(gamePostDTO.getSmallBlind(), game.getSmallBlind());
+    assertEquals(gamePostDTO.getBigBlind(), game.getBigBlind());
+  }
+
+  @Test
+  public void testEntityToGameGetDTO() {
+    // create Game
+    Game game = new Game();
+    game.setId(1L);
+    game.setIsPublic(true);
+    game.setMaximalPlayers(5);
+    game.setStartCredit(1000L);
+    game.setSmallBlind(10);
+    game.setBigBlind(20);
+    game.setSmallBlindIndex(0);
+    game.setPot(1100L);
+    game.setCallAmount(100L);
+    game.setGameStatus(GameStatus.WAITING);
+
+    // Create GameGetDTO
+    GameGetDTO gameGetDTO = DTOMapper.INSTANCE.convertEntityToGameGetDTO(game);
+
+    // check content
+    assertEquals(game.getId(), gameGetDTO.getId());
+    assertEquals(game.getIsPublic(), gameGetDTO.getIsPublic());
+    assertEquals(game.getMaximalPlayers(), gameGetDTO.getMaximalPlayers());
+    assertEquals(game.getStartCredit(), gameGetDTO.getStartCredit());
+    assertEquals(game.getSmallBlind(), gameGetDTO.getSmallBlind());
+    assertEquals(game.getBigBlind(), gameGetDTO.getBigBlind());
+    assertEquals(game.getSmallBlindIndex(), gameGetDTO.getSmallBlindIndex());
+    assertEquals(game.getPot(), gameGetDTO.getPot());
+    assertEquals(game.getCallAmount(), gameGetDTO.getCallAmount());
+    assertEquals(game.getGameStatus(), gameGetDTO.getGameStatus());
   }
 }
