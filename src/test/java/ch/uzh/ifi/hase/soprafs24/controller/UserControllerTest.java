@@ -110,7 +110,7 @@ public class UserControllerTest {
         .andExpect(jsonPath("$.username", is(user.getUsername())))
         .andExpect(jsonPath("$.status", is(user.getStatus().toString())))
         .andExpect(jsonPath("$.token", is(user.getToken())));
-  }k
+  }
 
   /**
    * Helper Method to convert userPostDTO into a JSON string such that the input
