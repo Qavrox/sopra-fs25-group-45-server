@@ -3,20 +3,19 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.HttpClientErrorException.Forbidden;
 import org.springframework.web.server.ResponseStatusException;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 
 import javax.transaction.Transactional;
 
 import ch.uzh.ifi.hase.soprafs24.constant.GameStatus;
+import ch.uzh.ifi.hase.soprafs24.constant.Card;
 import ch.uzh.ifi.hase.soprafs24.entity.Game;
 import ch.uzh.ifi.hase.soprafs24.entity.Player;
 import ch.uzh.ifi.hase.soprafs24.entity.User;
+import ch.uzh.ifi.hase.soprafs24.helpers.OddsCalculator;
 import ch.uzh.ifi.hase.soprafs24.repository.GameRepository;
 import ch.uzh.ifi.hase.soprafs24.repository.PlayerRepository;
 import ch.uzh.ifi.hase.soprafs24.repository.UserRepository;
@@ -239,5 +238,56 @@ public class GameService {
         return game;
     }
 
-    
+    public List<Player> determineWinners(Long gameId) {
+        Game game = gameRepository.findByid(gameId);
+        if (game == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found");
+        }
+
+        List<Player> players = game.getPlayers();
+        List<String> communityCards = game.getCommunityCards();
+        
+        if (communityCards.size() < 5) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Not enough community cards to determine winner");
+        }
+
+        // Convert community cards to Card objects
+        List<Card> communityCardObjects = new ArrayList<>();
+        for (String cardStr : communityCards) {
+            communityCardObjects.add(Card.fromShortString(cardStr));
+        }
+
+        // Evaluate each player's hand
+        List<Player> winners = new ArrayList<>();
+        OddsCalculator.HandValue bestHandValue = null;
+
+        for (Player player : players) {
+            // Convert player's hand to Card objects
+            List<Card> playerCards = new ArrayList<>();
+            for (String cardStr : player.getHand()) {
+                playerCards.add(Card.fromShortString(cardStr));
+            }
+
+            // Combine player's cards with community cards
+            List<Card> allCards = new ArrayList<>(playerCards);
+            allCards.addAll(communityCardObjects);
+
+            // Evaluate the hand
+            OddsCalculator.HandValue currentHandValue = OddsCalculator.evaluateHand(allCards);
+
+            // Compare with best hand so far
+            if (bestHandValue == null || currentHandValue.compareTo(bestHandValue) > 0) {
+                // New best hand found
+                winners.clear();
+                winners.add(player);
+                bestHandValue = currentHandValue;
+            } else if (currentHandValue.compareTo(bestHandValue) == 0) {
+                // Tied with best hand
+                winners.add(player);
+            }
+        }
+
+        return winners;
+    }
+
 }
