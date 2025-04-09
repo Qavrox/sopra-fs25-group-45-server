@@ -256,4 +256,228 @@ public class HandEvaluatorTest {
         assertEquals(5, steelWheelValue.kickers.get(0).intValue(), 
                 "The high card of a steel wheel should be 5");
     }
+
+    @Test
+    public void testTiedStraightFlushes() {
+        // Two straight flushes with different high cards
+        List<Card> straightFlush1 = Arrays.asList(
+            Card.fromShortString("AH"),
+            Card.fromShortString("KH"),
+            Card.fromShortString("QH"),
+            Card.fromShortString("JH"),
+            Card.fromShortString("TH"),
+            Card.fromShortString("2S"),
+            Card.fromShortString("3C")
+        );
+
+        List<Card> straightFlush2 = Arrays.asList(
+            Card.fromShortString("KH"),
+            Card.fromShortString("QH"),
+            Card.fromShortString("JH"),
+            Card.fromShortString("TH"),
+            Card.fromShortString("9H"),
+            Card.fromShortString("2S"),
+            Card.fromShortString("3C")
+        );
+
+        OddsCalculator.HandValue value1 = OddsCalculator.evaluateHand(straightFlush1);
+        OddsCalculator.HandValue value2 = OddsCalculator.evaluateHand(straightFlush2);
+
+        assertTrue(value1.compareTo(value2) > 0, 
+                "Ace-high straight flush should be higher than King-high straight flush");
+        assertEquals(8, value1.category, "Both hands should be straight flushes (category 8)");
+        assertEquals(8, value2.category, "Both hands should be straight flushes (category 8)");
+    }
+
+    @Test
+    public void testTiedFourOfAKinds() {
+        // Two four of a kinds with different quads
+        List<Card> fourOfAKind1 = Arrays.asList(
+            Card.fromShortString("AS"),
+            Card.fromShortString("AD"),
+            Card.fromShortString("AC"),
+            Card.fromShortString("AH"),
+            Card.fromShortString("KD"),
+            Card.fromShortString("2C"),
+            Card.fromShortString("3D")
+        );
+
+        List<Card> fourOfAKind2 = Arrays.asList(
+            Card.fromShortString("KS"),
+            Card.fromShortString("KD"),
+            Card.fromShortString("KC"),
+            Card.fromShortString("KH"),
+            Card.fromShortString("AD"),
+            Card.fromShortString("2C"),
+            Card.fromShortString("3D")
+        );
+
+        OddsCalculator.HandValue value1 = OddsCalculator.evaluateHand(fourOfAKind1);
+        OddsCalculator.HandValue value2 = OddsCalculator.evaluateHand(fourOfAKind2);
+
+        assertTrue(value1.compareTo(value2) > 0, 
+                "Four Aces should be higher than four Kings");
+        assertEquals(7, value1.category, "Both hands should be four of a kind (category 7)");
+        assertEquals(7, value2.category, "Both hands should be four of a kind (category 7)");
+    }
+
+    @Test
+    public void testTiedFullHouses() {
+        // Two full houses with different trips
+        List<Card> fullHouse1 = Arrays.asList(
+            Card.fromShortString("AH"),
+            Card.fromShortString("AS"),
+            Card.fromShortString("AD"),
+            Card.fromShortString("KH"),
+            Card.fromShortString("KD"),
+            Card.fromShortString("2C"),
+            Card.fromShortString("3S")
+        );
+
+        List<Card> fullHouse2 = Arrays.asList(
+            Card.fromShortString("KH"),
+            Card.fromShortString("KS"),
+            Card.fromShortString("KD"),
+            Card.fromShortString("AH"),
+            Card.fromShortString("AD"),
+            Card.fromShortString("2C"),
+            Card.fromShortString("3S")
+        );
+
+        OddsCalculator.HandValue value1 = OddsCalculator.evaluateHand(fullHouse1);
+        OddsCalculator.HandValue value2 = OddsCalculator.evaluateHand(fullHouse2);
+
+        assertTrue(value1.compareTo(value2) > 0, 
+                "Aces full of Kings should be higher than Kings full of Aces");
+        assertEquals(6, value1.category, "Both hands should be full houses (category 6)");
+        assertEquals(6, value2.category, "Both hands should be full houses (category 6)");
+    }
+
+    @Test
+    public void testTiedFlushes() {
+        // Two flushes with different high cards
+        List<Card> flush1 = Arrays.asList(
+            Card.fromShortString("AH"),
+            Card.fromShortString("KH"),
+            Card.fromShortString("JH"),
+            Card.fromShortString("9H"),
+            Card.fromShortString("5H"),
+            Card.fromShortString("2C"),
+            Card.fromShortString("3S")
+        );
+
+        List<Card> flush2 = Arrays.asList(
+            Card.fromShortString("KH"),
+            Card.fromShortString("QH"),
+            Card.fromShortString("JH"),
+            Card.fromShortString("9H"),
+            Card.fromShortString("5H"),
+            Card.fromShortString("2C"),
+            Card.fromShortString("3S")
+        );
+
+        OddsCalculator.HandValue value1 = OddsCalculator.evaluateHand(flush1);
+        OddsCalculator.HandValue value2 = OddsCalculator.evaluateHand(flush2);
+
+        assertTrue(value1.compareTo(value2) > 0, 
+                "Ace-high flush should be higher than King-high flush");
+        assertEquals(5, value1.category, "Both hands should be flushes (category 5)");
+        assertEquals(5, value2.category, "Both hands should be flushes (category 5)");
+    }
+
+    @Test
+    public void testTiedTwoPairs() {
+        // Two two-pair hands with different high pairs
+        List<Card> twoPair1 = Arrays.asList(
+            Card.fromShortString("AH"),
+            Card.fromShortString("AS"),
+            Card.fromShortString("KD"),
+            Card.fromShortString("KH"),
+            Card.fromShortString("QD"),
+            Card.fromShortString("2C"),
+            Card.fromShortString("3S")
+        );
+
+        List<Card> twoPair2 = Arrays.asList(
+            Card.fromShortString("KH"),
+            Card.fromShortString("KS"),
+            Card.fromShortString("QD"),
+            Card.fromShortString("QH"),
+            Card.fromShortString("AD"),
+            Card.fromShortString("2C"),
+            Card.fromShortString("3S")
+        );
+
+        OddsCalculator.HandValue value1 = OddsCalculator.evaluateHand(twoPair1);
+        OddsCalculator.HandValue value2 = OddsCalculator.evaluateHand(twoPair2);
+
+        assertTrue(value1.compareTo(value2) > 0, 
+                "Aces and Kings should be higher than Kings and Queens");
+        assertEquals(2, value1.category, "Both hands should be two pairs (category 2)");
+        assertEquals(2, value2.category, "Both hands should be two pairs (category 2)");
+    }
+
+    @Test
+    public void testTiedOnePairs() {
+        // Two one-pair hands with different pairs
+        List<Card> onePair1 = Arrays.asList(
+            Card.fromShortString("AH"),
+            Card.fromShortString("AS"),
+            Card.fromShortString("KH"),
+            Card.fromShortString("QD"),
+            Card.fromShortString("JC"),
+            Card.fromShortString("2C"),
+            Card.fromShortString("3S")
+        );
+
+        List<Card> onePair2 = Arrays.asList(
+            Card.fromShortString("KH"),
+            Card.fromShortString("KS"),
+            Card.fromShortString("AH"),
+            Card.fromShortString("QD"),
+            Card.fromShortString("JC"),
+            Card.fromShortString("2C"),
+            Card.fromShortString("3S")
+        );
+
+        OddsCalculator.HandValue value1 = OddsCalculator.evaluateHand(onePair1);
+        OddsCalculator.HandValue value2 = OddsCalculator.evaluateHand(onePair2);
+
+        assertTrue(value1.compareTo(value2) > 0, 
+                "Pair of Aces should be higher than pair of Kings");
+        assertEquals(1, value1.category, "Both hands should be one pair (category 1)");
+        assertEquals(1, value2.category, "Both hands should be one pair (category 1)");
+    }
+
+    @Test
+    public void testTiedHighCards() {
+        // Two high card hands with different high cards
+        List<Card> highCard1 = Arrays.asList(
+            Card.fromShortString("AH"),
+            Card.fromShortString("KS"),
+            Card.fromShortString("QH"),
+            Card.fromShortString("JD"),
+            Card.fromShortString("9C"),
+            Card.fromShortString("2C"),
+            Card.fromShortString("3S")
+        );
+
+        List<Card> highCard2 = Arrays.asList(
+            Card.fromShortString("KH"),
+            Card.fromShortString("QS"),
+            Card.fromShortString("JH"),
+            Card.fromShortString("TD"),
+            Card.fromShortString("4C"),
+            Card.fromShortString("2C"),
+            Card.fromShortString("3S")
+        );
+
+        OddsCalculator.HandValue value1 = OddsCalculator.evaluateHand(highCard1);
+        OddsCalculator.HandValue value2 = OddsCalculator.evaluateHand(highCard2);
+
+        assertEquals(0, value1.category, "Both hands should be high card (category 0), but hand 1 is not");
+        assertEquals(0, value2.category, "Both hands should be high card (category 0), but hand 2 is not");
+        assertTrue(value1.compareTo(value2) > 0, 
+                "Ace-high should be higher than King-high");
+    }
 } 
