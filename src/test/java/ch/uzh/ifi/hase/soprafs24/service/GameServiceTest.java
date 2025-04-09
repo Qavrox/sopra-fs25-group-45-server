@@ -123,6 +123,7 @@ public class GameServiceTest {
         when(gameRepository.findByid(2L)).thenReturn(null);
         when(userRepository.findAll()).thenReturn(Collections.singletonList(user));
         when(userRepository.findByToken(user.getToken())).thenReturn(user);
+        when(gameRepository.findAll()).thenReturn(Collections.singletonList(game));
       
         // Mock the authenticator
         Mockito.doNothing().when(authenticator).checkTokenValidity(any(String.class));
@@ -232,10 +233,46 @@ public class GameServiceTest {
 
     }
 
+    @Test
+    void testCreateGameInvalidMaximalPlayers() {
+        // when
+        Game gameWithTooFewPlayers = new Game();
+        gameWithTooFewPlayers.setMaximalPlayers(0); // Invalid number of players
+
+        Game gameWithTooManyPlayers = new Game();
+        gameWithTooManyPlayers.setMaximalPlayers(11); // Invalid number of players
+
+
+        assertThrows(ResponseStatusException.class, () -> {
+            gameService.createNewGame(gameWithTooFewPlayers, user.getToken());
+        });
+
+        assertThrows(ResponseStatusException.class, () -> {
+            gameService.createNewGame(gameWithTooManyPlayers, user.getToken());
+        });
+    }
+
+    @Test
+    void testCreateGameInvalidStartCredit() {
+        // when
+        Game gameWithNegativeStartCredit = new Game();
+        gameWithNegativeStartCredit.setStartCredit(-100L); // Invalid start credit
+
+        Game gameWithZeroStartCredit = new Game();
+        gameWithZeroStartCredit.setStartCredit(0L); // Invalid start credit
+
+        assertThrows(ResponseStatusException.class, () -> {
+            gameService.createNewGame(gameWithNegativeStartCredit, user.getToken());
+        });
+
+        assertThrows(ResponseStatusException.class, () -> {
+            gameService.createNewGame(gameWithZeroStartCredit, user.getToken());
+        });
+    }
+
     @Test 
     void testJoinGameValidToken(){
         // when
-        // System.out.println("Token: " + user.getToken());
         Game jointGame = gameService.joinGame(game.getId(), user.getToken(), game.getPassword());
 
         assert(Objects.equals(game, jointGame));
@@ -255,6 +292,54 @@ public class GameServiceTest {
 
         assertThrows(ResponseStatusException.class, () -> {
             gameService.joinGame(privateGame.getId(), user.getToken(), "wrong password");
+        });
+    }
+
+
+    @Test
+    void testgetAllPublicGamesValidToken() {
+
+        List<Game> games = new ArrayList<>();
+        games.add(game);
+        // when
+        List<Game> publicGames = gameService.getAllPublicGames(user.getToken());
+        
+
+        // then
+        assertNotNull(publicGames);
+        assertEquals(games, publicGames);
+    }
+
+    void testgetAllPublicGamesInvalidToken(){
+        // when
+        assertThrows(ResponseStatusException.class, () -> {
+            gameService.getAllPublicGames("invalid token");
+        });
+    }
+
+    @Test
+    void testGetGameByIdValidToken() {
+        // when
+        Game foundGame = gameService.getGameById(game.getId(), user.getToken());
+
+        // then
+        assertNotNull(foundGame);
+        assertEquals(game, foundGame);
+    }
+
+    @Test
+    void testGetGameByIdInvalidToken() {
+        // when
+        assertThrows(ResponseStatusException.class, () -> {
+            gameService.getGameById(privateGame.getId(), "invalid token");
+        });
+    }
+
+    @Test
+    void testGetGameByIdGameNotFound() {
+        // when
+        assertThrows(ResponseStatusException.class, () -> {
+            gameService.getGameById(2L, user.getToken());
         });
     }
 

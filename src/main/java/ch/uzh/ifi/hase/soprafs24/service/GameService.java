@@ -119,6 +119,8 @@ public class GameService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found");
         }
 
+        
+
         // Check if the token is the same as any of the players in the game (This is not the same as checkTokenValidity, but it indirectly checks the validity of the token)
         if(!(game.getIsPublic())){
             User user = userRepository.findByToken(authenticatorToken);
