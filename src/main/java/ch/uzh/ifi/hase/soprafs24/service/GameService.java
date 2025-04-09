@@ -503,4 +503,26 @@ public class GameService {
         
         return game;
     }
+    
+    private Game validateGameAndPlayer(Long gameId, String token) {
+        User user = userRepository.findByToken(token);
+        Game game = gameRepository.findByid(gameId);
+        if (user == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid token");
+        }
+        if (game == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found");
+        }
+        return game;
+    }
+    
+    private Player getPlayerByToken(Game game, String token) {
+        User user = userRepository.findByToken(token);
+        for (Player player : game.getPlayers()) {
+            if (player.getUserId().equals(user.getId())) {
+                return player;
+            }
+        }
+        throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Player not part of this game");
+    }
 }
