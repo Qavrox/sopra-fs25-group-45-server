@@ -98,6 +98,10 @@ public class Game implements Serializable{
         return players;
     }
 
+    public void setPlayers(List<Player> players){
+        this.players=players;
+    }
+
 
 
     public void addPlayer(Player player){
@@ -271,5 +275,12 @@ public class Game implements Serializable{
     }
     public void setBigBlind(int bigBlind) {
         this.bigBlind = bigBlind;
+    }
+
+    public void setStatus(GameStatus gameStatus) {
+        this.gameStatus=gameStatus;
+    }
+    public GameStatus getStatus() {
+        return gameStatus;
     }
 }

@@ -49,6 +49,7 @@ public class GameRoomController {
         List<Game> allGames = gameService.getAllPublicGames(token);
         List<GameGetDTO> allGamesGetDTO = new ArrayList<>();
         for (Game game : allGames) {
+            System.out.println(game.getId());
             GameGetDTO gameGetDTO = DTOMapper.INSTANCE.convertEntityToGameGetDTO(game);
             allGamesGetDTO.add(gameGetDTO);
         }
