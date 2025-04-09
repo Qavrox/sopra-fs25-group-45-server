@@ -2,6 +2,7 @@ package ch.uzh.ifi.hase.soprafs24.service;
 
 import ch.uzh.ifi.hase.soprafs24.constant.Card;
 import ch.uzh.ifi.hase.soprafs24.constant.GameStatus;
+import ch.uzh.ifi.hase.soprafs24.constant.UserStatus;
 import ch.uzh.ifi.hase.soprafs24.entity.Game;
 import ch.uzh.ifi.hase.soprafs24.entity.Player;
 import ch.uzh.ifi.hase.soprafs24.entity.User;
@@ -15,14 +16,20 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.when;
 
 public class GameServiceTest {
@@ -36,15 +43,31 @@ public class GameServiceTest {
     @Mock
     private PlayerRepository playerRepository;
 
+    @Mock
+    private Authenticator authenticator;
+
     @InjectMocks
     private GameService gameService;
 
+    
+
     private Game game;
+    private Game privateGame;
     private List<Player> players;
+    private User user;
+
 
     @BeforeEach
     void setup() {
         MockitoAnnotations.openMocks(this);
+
+        // Set up user
+        user= new User();
+        user.setName("Firstname Lastname");
+        user.setUsername("firstname@lastname");
+        user.setStatus(UserStatus.OFFLINE);
+        user.setCreationDate(java.time.LocalDate.now());
+        user.setToken("valid-token");
         
         // Setup a basic game
         game = new Game();
@@ -54,6 +77,26 @@ public class GameServiceTest {
         game.setStartCredit(1000L);
         game.setCreatorId(1);
         game.setIsPublic(true);
+        game.setSmallBlind(1);
+        game.setBigBlind(1);
+        game.setSmallBlindIndex(0);
+        game.setPot(1L);
+        game.setCallAmount(1L);
+        
+        // Set up game with a private game
+        privateGame = new Game();
+        privateGame.setId(3L);
+        privateGame.setGameStatus(GameStatus.RIVER);
+        privateGame.setMaximalPlayers(5);
+        privateGame.setStartCredit(1000L);
+        privateGame.setCreatorId(1);
+        privateGame.setIsPublic(false);
+        privateGame.setPassword("password");
+        privateGame.setSmallBlind(1);
+        privateGame.setBigBlind(1);
+        privateGame.setSmallBlindIndex(0);
+        privateGame.setPot(1L);
+        privateGame.setCallAmount(1L);
         
         // Initialize cardDeck and communityCards
         game.setCardDeck(new ArrayList<>());
@@ -76,7 +119,13 @@ public class GameServiceTest {
         
         // Setup mocks
         when(gameRepository.findByid(1L)).thenReturn(game);
+        when(gameRepository.findByid(3L)).thenReturn(privateGame);
         when(gameRepository.findByid(2L)).thenReturn(null);
+        when(userRepository.findAll()).thenReturn(Collections.singletonList(user));
+        when(userRepository.findByToken(user.getToken())).thenReturn(user);
+      
+        // Mock the authenticator
+        Mockito.doNothing().when(authenticator).checkTokenValidity(any(String.class));
     }
 
     @Test
@@ -159,4 +208,54 @@ public class GameServiceTest {
         assertEquals(1, winners.size());
         assertEquals(1L, winners.get(0).getUserId());
     }
-} 
+
+
+
+    @Test 
+    void testCreateNewGameValidToken(){
+        // when
+        gameService.createNewGame(game, user.getToken());
+
+        // then
+        Game persistedGame = gameRepository.findByid(game.getId());
+        assertNotNull(persistedGame);
+        assert(Objects.equals(game, persistedGame));
+
+    }
+
+    @Test 
+    void testCreateNewGameInvalidToken(){
+        // when
+        assertThrows(ResponseStatusException.class, () -> {
+            gameService.createNewGame(game, "invalid token");
+        });
+
+    }
+
+    @Test 
+    void testJoinGameValidToken(){
+        // when
+        // System.out.println("Token: " + user.getToken());
+        Game jointGame = gameService.joinGame(game.getId(), user.getToken(), game.getPassword());
+
+        assert(Objects.equals(game, jointGame));
+
+    }
+
+    @Test 
+    void testJoinGameInvalidToken(){
+        assertThrows(ResponseStatusException.class, () -> {
+            gameService.joinGame(game.getId(), "invalid token", game.getPassword());
+        });
+
+    }
+
+    @Test 
+    void testJoinGameWrongPassword(){
+
+        assertThrows(ResponseStatusException.class, () -> {
+            gameService.joinGame(privateGame.getId(), user.getToken(), "wrong password");
+        });
+    }
+
+}
