@@ -140,9 +140,22 @@ public class GameService {
 
     public Game startRound(Long gameId, String token){
         Game game = gameRepository.findByid(gameId);
+
         if (game == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found");
+        }        
+
+        //this is a mess... but basically, we're just checking that the creator of the game is the one who is trying to start the game
+        int gameCreatorIdInt = game.getCreatorId();
+        long gameCreatorId = (long) gameCreatorIdInt;
+
+        User gameCreator = userRepository.findByid(gameCreatorId);
+
+        User user = userRepository.findByToken(token);
+        if(gameCreator.getToken()!=user.getToken()){
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You are not the creator of the game. You cannot start the game.");
         }
+
         if (game.getPlayers().size() < 2) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Not enough players to start the game");
         }

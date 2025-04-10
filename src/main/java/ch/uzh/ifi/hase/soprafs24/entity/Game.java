@@ -119,7 +119,7 @@ public class Game implements Serializable{
     }
 
     public void setStartBlinds(){
-        this.smallBlindIndex=1;
+        this.smallBlindIndex=0;
     }
 
     public int getSmallBlindIndex(){

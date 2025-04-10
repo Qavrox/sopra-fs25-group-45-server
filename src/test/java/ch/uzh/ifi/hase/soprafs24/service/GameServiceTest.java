@@ -123,6 +123,7 @@ public class GameServiceTest {
         when(gameRepository.findByid(2L)).thenReturn(null);
         when(userRepository.findAll()).thenReturn(Collections.singletonList(user));
         when(userRepository.findByToken(user.getToken())).thenReturn(user);
+        when(userRepository.findByid(1L)).thenReturn(user);
         when(gameRepository.findAll()).thenReturn(Collections.singletonList(game));
       
         // Mock the authenticator
@@ -343,4 +344,63 @@ public class GameServiceTest {
         });
     }
 
+    @Test
+    void testStartRound_ValidGame() {
+        // when
+        Game updatedGame = gameService.startRound(game.getId(), user.getToken());
+        // then
+        assertNotNull(updatedGame);
+        assertEquals(GameStatus.READY, updatedGame.getGameStatus());
+        assertEquals(0, updatedGame.getSmallBlindIndex());;
+        assertEquals(52, updatedGame.getCardDeck().size()); // Full deck of cards
+        assertTrue(updatedGame.getCommunityCards().isEmpty()); // Community cards should be empty
+        // Verify that all players' hands are cleared
+        for (Player player : updatedGame.getPlayers()) {
+            assertTrue(player.getHand().isEmpty());
+        }
+    }
+   
+    @Test
+    void testStartRoundGameNotFound() {
+        // when
+        assertThrows(ResponseStatusException.class, () -> {
+            gameService.startRound(2L, user.getToken()); // Game with ID 2 does not exist
+        });
+    }
+    
+    @Test
+    void testStartRoundNotEnoughPlayers() {
+        // Setup a game with only one player
+        Game gameWithOnePlayer = new Game();
+        gameWithOnePlayer.setId(4L);
+        gameWithOnePlayer.setMaximalPlayers(5);
+        gameWithOnePlayer.setStartCredit(1000L);
+        gameWithOnePlayer.setCreatorId(1);
+        gameWithOnePlayer.setIsPublic(true);
+        gameWithOnePlayer.addPlayer(new Player(1L, new ArrayList<>(), gameWithOnePlayer));
+        when(gameRepository.findByid(4L)).thenReturn(gameWithOnePlayer);
+        // when
+        assertThrows(ResponseStatusException.class, () -> {
+            gameService.startRound(4L, user.getToken());
+        });
+    }
+
+    @Test
+    void testStartRound_InvalidToken() {
+
+        User notRoomCreator = new User();
+        notRoomCreator.setName("Not Room Creator");
+        notRoomCreator.setUsername("notroomcreator@lastname");
+        notRoomCreator.setStatus(UserStatus.ONLINE);
+        notRoomCreator.setCreationDate(java.time.LocalDate.now());
+        notRoomCreator.setToken("invalid-token");
+        // Mock the authenticator to throw an exception for invalid tokens
+        Mockito.doNothing().when(authenticator).checkTokenValidity("invalid-token");
+        when(userRepository.findByToken("invalid-token")).thenReturn(notRoomCreator);
+        // when
+        assertThrows(ResponseStatusException.class, () -> {
+            gameService.startRound(game.getId(), "invalid-token");
+        });
+    }
+    
 }
