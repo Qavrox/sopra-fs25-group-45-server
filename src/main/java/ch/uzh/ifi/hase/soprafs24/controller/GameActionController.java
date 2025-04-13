@@ -47,5 +47,6 @@ public class GameActionController {
         
         GameGetDTO gameGetDTO = DTOMapper.INSTANCE.convertEntityToGameGetDTO(game);
         return gameGetDTO;
+
     }
 }

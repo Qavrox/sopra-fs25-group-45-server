@@ -69,7 +69,14 @@ public class Game implements Serializable{
     private int maximalPlayers;    
 
     @Column(nullable = false)
-    private Long startCredit;      
+    private Long startCredit; 
+
+    @Column(nullable = true)
+    private int currentPlayerIndex;
+    
+    @Column(nullable = true)
+    private int lastRaisePlayerIndex;   
+      
 
     public String getPassword(){
         return password;
@@ -259,11 +266,7 @@ public class Game implements Serializable{
     }
     
     // Add these fields to the Game class
-    @Column(nullable = true)
-    private int currentPlayerIndex;
     
-    @Column(nullable = true)
-    private int lastRaisePlayerIndex;
     
     // Add these methods to the Game class
     public int getCurrentPlayerIndex() {
