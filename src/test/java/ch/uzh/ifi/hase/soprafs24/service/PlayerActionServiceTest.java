@@ -412,8 +412,8 @@ public class PlayerActionServiceTest {
         result.setCurrentPlayerIndex(0);
         
         result = gameService.processPlayerAction(1L, 1L, PlayerAction.CHECK, 0L);
-        assertEquals(GameStatus.SHOWDOWN, result.getGameStatus());
-        
+        //assertEquals(GameStatus.SHOWDOWN, result.getGameStatus());
+        //for now the SHOWDOWN to GAMEOVER transition goes internally, won't work
         // Verify game eventually reaches GAMEOVER
         assertEquals(GameStatus.GAMEOVER, result.getGameStatus());
     }
