@@ -20,6 +20,7 @@ import ch.uzh.ifi.hase.soprafs24.entity.User;
 import ch.uzh.ifi.hase.soprafs24.repository.GameRepository;
 import ch.uzh.ifi.hase.soprafs24.repository.PlayerRepository;
 import ch.uzh.ifi.hase.soprafs24.repository.UserRepository;
+import ch.uzh.ifi.hase.soprafs24.constant.PlayerAction;
 
 @Service
 @Transactional
@@ -228,8 +229,6 @@ public class GameService {
         return game;
     }
 
-    // Add these methods to the GameService class
-    
     /**
      * Process a player action (check, call, bet, raise, fold)
      */
@@ -345,12 +344,12 @@ public class GameService {
         playerRepository.save(player);
         playerRepository.flush();
         
-        // Move to next player
-        game.moveToNextPlayer();
-        
         // Check if betting round is complete
         if (game.isBettingRoundComplete()) {
             advanceGamePhase(game);
+        } else {
+            // Move to next player
+            game.moveToNextPlayer();
         }
         
         // Save game state
@@ -416,16 +415,23 @@ public class GameService {
             case RIVER:
                 // Move to showdown
                 game.setGameStatus(GameStatus.SHOWDOWN);
-                // Determine winner and award pot (this would be implemented in a separate method)
+                // Determine winner and award pot
+                gameRepository.save(game);
+                gameRepository.flush();
+                
+                // Determine winner and award pot
                 determineWinnerAndAwardPot(game);
+                game.setGameStatus(GameStatus.GAMEOVER);
                 break;
                 
             default:
                 break;
         }
         
-        // Reset player actions for the new betting round
-        game.resetPlayerActions();
+        // Reset player actions for the new betting round if game is not over
+        if (game.getGameStatus() != GameStatus.GAMEOVER) {
+            game.resetPlayerActions();
+        }
     }
     
     /**
@@ -442,8 +448,6 @@ public class GameService {
                 break;
             }
         }
-        
-        game.setGameStatus(GameStatus.GAMEOVER);
     }
     
     /**

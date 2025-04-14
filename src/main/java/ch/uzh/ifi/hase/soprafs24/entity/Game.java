@@ -356,4 +356,12 @@ public class Game implements Serializable{
             player.setCurrentBet(0L);
         }
     }
+
+    public int getSmallBlindIndex() {
+        return smallBlindIndex;
+    }
+    
+    public int getBigBlindIndex() {
+        return bigBlindIndex;
+    }
 }
