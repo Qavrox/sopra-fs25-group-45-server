@@ -74,9 +74,10 @@ public class GameService {
 
 
         Game jointGame = gameRepository.findByid(gameId);
-        if (jointGame == null) {
+        if (jointGame == null || jointGame.getStatus() == GameStatus.ARCHIEVED) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found");
         }
+
         if(!(jointGame.getIsPublic())){
             if(!(Objects.equals(jointGame.getPassword(), password))){
                 throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Wrong password. Entry to game DENIED.");
@@ -88,6 +89,7 @@ public class GameService {
         if (jointGame.getPlayers().size() >= jointGame.getMaximalPlayers()) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Game is full. Entry to game DENIED.");
         }
+
         
         List<String> hand = new ArrayList<>();
         Player jointPlayer = new Player(user.getId(), hand, jointGame);
@@ -105,7 +107,7 @@ public class GameService {
         List<Game> publicGames = new ArrayList<>();
 
         for (Game game : allGames) {
-            if (game.getIsPublic()) {
+            if (game.getIsPublic() && game.getStatus()!=GameStatus.ARCHIEVED) {
                 publicGames.add(game);
             }
         }
@@ -115,10 +117,9 @@ public class GameService {
     public Game getGameById(Long id, String authenticatorToken) {
 
         Game game = gameRepository.findByid(id);
-        if (game == null) {
+        if (game == null || game.getStatus() == GameStatus.ARCHIEVED) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found");
         }
-
         
 
         // Check if the token is the same as any of the players in the game (This is not the same as checkTokenValidity, but it indirectly checks the validity of the token)
@@ -305,4 +306,59 @@ public class GameService {
         return winners;
     }
 
+
+    public Game deleteGame(Long gameId, String token){
+        Game game = gameRepository.findByid(gameId);
+        if (game == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found");
+        }
+
+        // Check if the token is the same as the creator of the game in case the token is not empty
+        int gameCreatorIdInt = game.getCreatorId();
+        long gameCreatorId = (long) gameCreatorIdInt;
+
+        User gameCreator = userRepository.findByid(gameCreatorId);
+
+        if(!(token.isEmpty()) && gameCreator.getToken()!=token){
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You are not the creator of the game. You cannot delete the game.");
+        }
+
+        // clear players
+        game.setPlayers(null);
+
+        // Archieve the the game
+        game.setStatus(GameStatus.ARCHIEVED);
+        gameRepository.save(game);
+        gameRepository.flush();
+        return game;
+    }
+
+    public Game leaveGame(Long gameId, String token){
+        Game game = gameRepository.findByid(gameId);
+        if (game == null || game.getStatus() == GameStatus.ARCHIEVED) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found");
+        }
+
+        // Check if the token is the same as any of the players in the game
+        User user = userRepository.findByToken(token);
+        List<Player> players = game.getPlayers();
+
+        int gameCreatorIdInt = game.getCreatorId();
+        long gameCreatorId = (long) gameCreatorIdInt;
+
+        User gameCreator = userRepository.findByid(gameCreatorId);
+
+        if(gameCreator.getToken()==token){
+            deleteGame(gameId, token);
+        }
+    
+        for (Player player : players) {
+            if (player.getUserId() == user.getId()) {
+                game.removePlayer(player);            
+            }        
+        }
+        gameRepository.save(game);
+        gameRepository.flush();
+        return game;
+    }
 }

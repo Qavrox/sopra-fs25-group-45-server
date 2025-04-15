@@ -305,4 +305,5 @@ class GameRepositoryTest {
         assertEquals(1, gameAfterRemoval.getPlayers().size());
         assertEquals(1, gameAfterRemoval.getNumberOfPlayers());
     }
+
 }

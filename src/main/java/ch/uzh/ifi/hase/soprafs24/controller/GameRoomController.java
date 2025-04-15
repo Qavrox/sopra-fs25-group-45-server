@@ -81,5 +81,28 @@ public class GameRoomController {
 
     }    
 
+    @DeleteMapping("/games/{gameId}")
+    @ResponseStatus(HttpStatus.OK)
+    @ResponseBody
+    public GameGetDTO deleteGame(@PathVariable("gameId") Long id, @RequestHeader("Authorization") String authenticatorToken){
+        String token = authenticatorToken.substring(7);
+        Game game = gameService.deleteGame(id, token);
+        GameGetDTO gameGetDTO = DTOMapper.INSTANCE.convertEntityToGameGetDTO(game);
+        return gameGetDTO;
+    }
+
+    @DeleteMapping("/games/{gameId}/join")
+    @ResponseStatus(HttpStatus.OK)
+    @ResponseBody
+    public GameGetDTO leaveGame(@PathVariable("gameId") Long id, @RequestHeader("Authorization") String authenticatorToken){
+        String token = authenticatorToken.substring(7);
+
+        Game game = gameService.leaveGame(id, token);
+        GameGetDTO gameGetDTO = DTOMapper.INSTANCE.convertEntityToGameGetDTO(game);
+        return gameGetDTO;
+
+    } 
+
+
     
 }

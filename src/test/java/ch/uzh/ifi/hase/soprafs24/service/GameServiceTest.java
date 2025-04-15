@@ -26,6 +26,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -55,6 +56,8 @@ public class GameServiceTest {
     private Game privateGame;
     private List<Player> players;
     private User user;
+    private Player player1;
+    private Player player2;
 
 
     @BeforeEach
@@ -104,8 +107,8 @@ public class GameServiceTest {
         
         // Add players
         players = new ArrayList<>();
-        Player player1 = new Player(1L, new ArrayList<>(), game);
-        Player player2 = new Player(2L, new ArrayList<>(), game);
+        player1 = new Player(1L, new ArrayList<>(), game);
+        player2 = new Player(2L, new ArrayList<>(), game);
         Player player3 = new Player(3L, new ArrayList<>(), game);
         
         players.add(player1);
@@ -125,6 +128,9 @@ public class GameServiceTest {
         when(userRepository.findByToken(user.getToken())).thenReturn(user);
         when(userRepository.findByid(1L)).thenReturn(user);
         when(gameRepository.findAll()).thenReturn(Collections.singletonList(game));
+        when(playerRepository.findByid(1L)).thenReturn(player1);
+        when(playerRepository.findByid(2L)).thenReturn(player2);
+
       
         // Mock the authenticator
         Mockito.doNothing().when(authenticator).checkTokenValidity(any(String.class));
@@ -403,4 +409,77 @@ public class GameServiceTest {
         });
     }
     
+
+    @Test
+    public void testGameDeletionValidToken(){
+        // Delete the game
+        gameService.deleteGame(game.getId(), user.getToken());
+        
+        assertEquals(game.getStatus(), GameStatus.ARCHIEVED);
+        assertThrows(ResponseStatusException.class, () -> {
+            gameService.getGameById(game.getId(), user.getToken());
+        });
+    }
+
+    @Test
+    public void testGameDeletionInvalidToken(){
+
+        assertThrows(ResponseStatusException.class, () -> {
+            gameService.deleteGame(game.getId(), "invalid token");
+        });
+    }    
+
+    @Test
+    void testLeaveGameValidPlayerToken() {
+
+            // Given new game such that creatorId does not match with user
+            Game leftGame = new Game();
+            leftGame.setId(1L);
+            leftGame.setGameStatus(GameStatus.RIVER);
+            leftGame.setMaximalPlayers(5);
+            leftGame.setStartCredit(1000L);
+            leftGame.setCreatorId(2);
+            leftGame.setIsPublic(true);
+            leftGame.setSmallBlind(1);
+            leftGame.setBigBlind(1);
+            leftGame.setSmallBlindIndex(0);
+            leftGame.setPot(1L);
+            leftGame.setCallAmount(1L);
+        
+        
+
+            // Call leaveGame
+            Game updatedGame = gameService.leaveGame(leftGame.getId(), user.getToken());
+            when(gameRepository.findByid(leftGame.getId())).thenReturn(updatedGame);
+            
+
+            // Verify the player was removed from the game
+            assertNotNull(updatedGame);
+            assertFalse(leftGame.getPlayers().contains(player1));
+            assertEquals(GameStatus.ARCHIEVED, updatedGame.getStatus()); // Game status should remain unchanged
+        }
+
+
+    @Test
+    void testLeaveGameGameNotFound() {
+        assertThrows(ResponseStatusException.class, () -> {
+            gameService.leaveGame(2L, user.getToken()); // Game with ID 2 does not exist
+        });
+    }
+
+
+    @Test
+    void testLeaveGameCreatorLeavesGame() {
+
+        // Call leaveGame
+        Game updatedGame = gameService.leaveGame(game.getId(), user.getToken());
+
+        // Assert: Verify the game was archived
+        assertNotNull(updatedGame);
+        assertEquals(GameStatus.ARCHIEVED, updatedGame.getStatus());
+    }
+
+
+
+
 }
