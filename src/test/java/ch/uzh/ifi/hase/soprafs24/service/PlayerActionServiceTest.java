@@ -43,7 +43,7 @@ public class PlayerActionServiceTest {
         // Create a test game
         testGame = new Game();
         testGame.setId(1L);
-        testGame.setCreatorId(1);
+        testGame.setCreatorId(1L);
         testGame.setIsPublic(true);
         testGame.setMaximalPlayers(6);
         testGame.setStartCredit(1000L);

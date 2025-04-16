@@ -21,7 +21,7 @@ public class BettingRoundTest {
     void setUp() {
         // Create a test game
         game = new Game();
-        game.setCreatorId(1);
+        game.setCreatorId(1L);
         game.setIsPublic(true);
         game.setMaximalPlayers(6);
         game.setStartCredit(1000L);
