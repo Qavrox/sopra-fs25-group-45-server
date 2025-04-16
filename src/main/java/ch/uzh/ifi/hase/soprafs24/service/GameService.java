@@ -336,6 +336,24 @@ public class GameService {
                 player.setLastAction(PlayerAction.FOLD);
                 break;
                 
+            case ALL_IN:
+                if (player.getCredit() <= 0) {
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "You have no chips left to go all-in");
+                }
+                Long allInAmount = player.getCredit();
+                Long newTotalBet = player.getCurrentBet() + allInAmount;
+            
+                player.setCurrentBet(newTotalBet);
+                player.setCredit(0L);
+                player.setHasActed(true);
+                player.setLastAction(PlayerAction.ALL_IN);
+            
+                if (newTotalBet > highestBet) {
+                    game.setCallAmount(newTotalBet);
+                    game.setLastRaisePlayerIndex(playerIndex);
+                }
+                break;
+                
             default:
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid action");
         }
