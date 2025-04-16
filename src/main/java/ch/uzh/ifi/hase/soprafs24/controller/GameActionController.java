@@ -9,6 +9,7 @@ import ch.uzh.ifi.hase.soprafs24.entity.Game;
 import ch.uzh.ifi.hase.soprafs24.entity.Player;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.GameGetDTO;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.PlayerActionPostDTO;
+import ch.uzh.ifi.hase.soprafs24.rest.dto.ProbabilityResponse;
 import ch.uzh.ifi.hase.soprafs24.rest.mapper.DTOMapper;
 import ch.uzh.ifi.hase.soprafs24.service.GameService;
 import ch.uzh.ifi.hase.soprafs24.service.UserService;
@@ -89,5 +90,42 @@ public class GameActionController {
         GameGetDTO gameGetDTO = DTOMapper.INSTANCE.convertEntityToGameGetDTO(result);
         return gameGetDTO;
 
+    }
+
+    @GetMapping("/games/{gameId}/probability")
+    @ResponseStatus(HttpStatus.OK)
+    @ResponseBody
+    public ProbabilityResponse getWinProbability(
+            @PathVariable("gameId") Long gameId,
+            @RequestHeader("Authorization") String authenticatorToken) {
+        
+        String token = authenticatorToken.substring(7);
+        User user = userService.getUserByToken(token);
+        if (user == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid token");
+        }
+
+        Game game = gameService.getGameById(gameId, token);
+        if (game == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found");
+        }
+
+        // Check if user is a player in the game
+        boolean isUserPlayer = false;
+        for (Player player : game.getPlayers()) {
+            if (player.getUserId().equals(user.getId())) {
+                isUserPlayer = true;
+                break;
+            }
+        }
+
+        if (!isUserPlayer) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You must be a player in the game to get probability");
+        }
+
+        double probability = gameService.calculateWinProbability(gameId, user.getId());
+        ProbabilityResponse response = new ProbabilityResponse();
+        response.setProbability(probability);
+        return response;
     }
 }
