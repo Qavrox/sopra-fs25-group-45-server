@@ -292,6 +292,36 @@ public class PlayerActionServiceTest {
     }
 
     @Test
+    public void testPlayerActionAllIn() {
+        // Setup game in PREFLOP state
+        testGame.setGameStatus(GameStatus.PREFLOP);
+        testGame.setCurrentPlayerIndex(0);
+
+        // Set player with some chips
+        player1.setCredit(200L);
+        player1.setCurrentBet(0L);
+
+        // Another player has already bet higher
+        player2.setCurrentBet(300L);
+        testGame.setCallAmount(300L);
+
+        // Player goes all-in
+        Game result = gameService.processPlayerAction(1L, 1L, PlayerAction.ALL_IN, 0L);
+
+        // Verify player went all-in
+        Player player = result.getPlayers().get(0);
+        assertEquals(0L, player.getCredit());
+        assertEquals(200L, player.getCurrentBet()); // All-in value
+        assertEquals(PlayerAction.ALL_IN, player.getLastAction());
+
+        // Call amount should remain unchanged if all-in didn't exceed it
+        assertEquals(300L, result.getCallAmount());
+
+        // Verify move to next player
+        assertEquals(1, result.getCurrentPlayerIndex());
+    }
+
+    @Test
     public void testInvalidActionCheck() {
         // Setup game in PREFLOP state
         testGame.setGameStatus(GameStatus.PREFLOP);
