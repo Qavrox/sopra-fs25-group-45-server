@@ -19,6 +19,7 @@ import ch.uzh.ifi.hase.soprafs24.helpers.OddsCalculator;
 import ch.uzh.ifi.hase.soprafs24.repository.GameRepository;
 import ch.uzh.ifi.hase.soprafs24.repository.PlayerRepository;
 import ch.uzh.ifi.hase.soprafs24.repository.UserRepository;
+import ch.uzh.ifi.hase.soprafs24.constant.PlayerAction;
 import ch.uzh.ifi.hase.soprafs24.service.Authenticator;
 
 @Service
@@ -253,14 +254,333 @@ public class GameService {
         return game;
     }
 
-    public List<Player> determineWinners(Long gameId) {
+    /**
+     * Process a player action (check, call, bet, raise, fold)
+     */
+    public Game processPlayerAction(Long gameId, Long playerId, PlayerAction action, Long amount) {
         Game game = gameRepository.findByid(gameId);
         if (game == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found");
         }
+        
+        // Find the player
+        Player player = null;
+        int playerIndex = -1;
+        for (int i = 0; i < game.getPlayers().size(); i++) {
+            Player p = game.getPlayers().get(i);
+            if (p.getId().equals(playerId)) {
+                player = p;
+                playerIndex = i;
+                break;
+            }
+        }
+        
+        if (player == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Player not found in this game");
+        }
+        
+        // Check if it's the player's turn
+        if (playerIndex != game.getCurrentPlayerIndex()) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "It's not your turn");
+        }
+        
+        // Check if player has already folded
+        if (player.getHasFolded()) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You have already folded");
+        }
+        
+        // Get the highest current bet
+        Long highestBet = 0L;
+        for (Player p : game.getPlayers()) {
+            if (p.getCurrentBet() > highestBet) {
+                highestBet = p.getCurrentBet();
+            }
+        }
+        
+        // Process the action
+        switch (action) {
+            case CHECK:
+                if (highestBet > player.getCurrentBet()) {
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot check when there are bets");
+                }
+                player.setHasActed(true);
+                player.setLastAction(PlayerAction.CHECK);
+                break;
+                
+            case CALL:
+                Long callAmount = highestBet - player.getCurrentBet();
+                if (callAmount > player.getCredit()) {
+                    callAmount = player.getCredit(); // All-in
+                }
+                player.setCredit(player.getCredit() - callAmount);
+                player.setCurrentBet(player.getCurrentBet() + callAmount);
+                player.setHasActed(true);
+                player.setLastAction(PlayerAction.CALL);
+                break;
+                
+            case BET:
+                if (highestBet > 0) {
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot bet when there are already bets, use raise instead");
+                }
+                if (amount <= 0) {
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Bet amount must be positive");
+                }
+                if (amount > player.getCredit()) {
+                    amount = player.getCredit(); // All-in
+                }
+                player.setCredit(player.getCredit() - amount);
+                player.setCurrentBet(amount);
+                player.setHasActed(true);
+                player.setLastAction(PlayerAction.BET);
+                game.setLastRaisePlayerIndex(playerIndex);
+                game.setCallAmount(amount);
+                break;
+                
+            case RAISE:
+                if (highestBet <= 0) {
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot raise when there are no bets, use bet instead");
+                }
+                if (amount <= highestBet) {
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Raise amount must be higher than current highest bet");
+                }
+                Long raiseAmount = amount - player.getCurrentBet();
+                if (raiseAmount > player.getCredit()) {
+                    amount = player.getCurrentBet() + player.getCredit(); // All-in
+                }
+                player.setCredit(player.getCredit() - (amount - player.getCurrentBet()));
+                player.setCurrentBet(amount);
+                player.setHasActed(true);
+                player.setLastAction(PlayerAction.RAISE);
+                game.setLastRaisePlayerIndex(playerIndex);
+                game.setCallAmount(amount);
+                break;
+                
+            case FOLD:
+                player.setHasFolded(true);
+                player.setHasActed(true);
+                player.setLastAction(PlayerAction.FOLD);
+                break;
+                
+            case ALL_IN:
+                if (player.getCredit() <= 0) {
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "You have no chips left to go all-in");
+                }
+                Long allInAmount = player.getCredit();
+                Long newTotalBet = player.getCurrentBet() + allInAmount;
+            
+                player.setCurrentBet(newTotalBet);
+                player.setCredit(0L);
+                player.setHasActed(true);
+                player.setLastAction(PlayerAction.ALL_IN);
+            
+                if (newTotalBet > highestBet) {
+                    game.setCallAmount(newTotalBet);
+                    game.setLastRaisePlayerIndex(playerIndex);
+                }
+                break;
+                
+            default:
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid action");
+        }
+        
+        // Save player state
+        playerRepository.save(player);
+        playerRepository.flush();
+        
+        // Check if betting round is complete
+        if (game.isBettingRoundComplete()) {
+            advanceGamePhase(game);
+        } else {
+            // Move to next player
+            game.moveToNextPlayer();
+        }
+        
+        // Save game state
+        gameRepository.save(game);
+        gameRepository.flush();
+        
+        return game;
+    }
+    
+    /**
+     * Advance the game to the next phase
+     */
+    private void advanceGamePhase(Game game) {
+        // Collect bets into pot
+        game.collectBetsIntoPot();
+        
+        // Check if only one player remains (everyone else folded)
+        int activePlayers = 0;
+        Player lastActivePlayer = null;
+        for (Player player : game.getPlayers()) {
+            if (!player.getHasFolded()) {
+                activePlayers++;
+                lastActivePlayer = player;
+            }
+        }
+        
+        if (activePlayers == 1) {
+            // Award pot to last player standing
+            lastActivePlayer.setCredit(lastActivePlayer.getCredit() + game.getPot());
+            game.setPot(0L);
+            game.setGameStatus(GameStatus.GAMEOVER);
+            return;
+        }
+        
+        // Advance to next game phase
+        switch (game.getGameStatus()) {
+            case PREFLOP:
+                // Move to flop - place 3 community cards
+                List<String> communityCards = new ArrayList<>();
+                communityCards.add(game.getRandomCard());
+                communityCards.add(game.getRandomCard());
+                communityCards.add(game.getRandomCard());
+                game.setCommunityCards(communityCards);
+                game.setGameStatus(GameStatus.FLOP);
+                break;
+                
+            case FLOP:
+                // Move to turn - add 1 more community card
+                List<String> flopCards = game.getCommunityCards();
+                flopCards.add(game.getRandomCard());
+                game.setCommunityCards(flopCards);
+                game.setGameStatus(GameStatus.TURN);
+                break;
+                
+            case TURN:
+                // Move to river - add 1 more community card
+                List<String> turnCards = game.getCommunityCards();
+                turnCards.add(game.getRandomCard());
+                game.setCommunityCards(turnCards);
+                game.setGameStatus(GameStatus.RIVER);
+                break;
+                
+            case RIVER:
+                // Move to showdown
+                game.setGameStatus(GameStatus.SHOWDOWN);
+                // Determine winner and award pot
+                gameRepository.save(game);
+                gameRepository.flush();
+                
+                // Determine winner and award pot
+                determineWinnerAndAwardPot(game);
+                game.setGameStatus(GameStatus.GAMEOVER);
+                break;
+                
+            default:
+                break;
+        }
+        
+        // Reset player actions for the new betting round if game is not over
+        if (game.getGameStatus() != GameStatus.GAMEOVER) {
+            game.resetPlayerActions();
+        }
+    }
+    
+    /**
+     * Determine the winner and award the pot
+     * This is a placeholder - you would need to implement poker hand evaluation logic
+     */
+    private void determineWinnerAndAwardPot(Game game) {
+        // For now, just award the pot to the first active player
+        // In a real implementation, you would evaluate poker hands
+        for (Player player : game.getPlayers()) {
+            if (!player.getHasFolded()) {
+                player.setCredit(player.getCredit() + game.getPot());
+                game.setPot(0L);
+                break;
+            }
+        }
+    }
+    
+    /**
+     * Start a new betting round with blinds
+     */
+    public Game startBettingRound(Long gameId) {
+        Game game = gameRepository.findByid(gameId);
+        if (game == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found");
+        }
+        
+        if (game.getGameStatus() != GameStatus.READY) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Game is not in ready phase");
+        }
+        
+        // Set small and big blinds
+        Player smallBlindPlayer = game.getPlayers().get(game.getSmallBlindIndex());
+        Player bigBlindPlayer = game.getPlayers().get(game.getBigBlindIndex());
+        
+        // Small blind is typically half the big blind
+        Long smallBlindAmount = 5L; // You might want to make this configurable
+        Long bigBlindAmount = 10L;  // You might want to make this configurable
+        
+        // Place small blind
+        if (smallBlindAmount > smallBlindPlayer.getCredit()) {
+            smallBlindAmount = smallBlindPlayer.getCredit(); // All-in
+        }
+        smallBlindPlayer.setCredit(smallBlindPlayer.getCredit() - smallBlindAmount);
+        smallBlindPlayer.setCurrentBet(smallBlindAmount);
+        smallBlindPlayer.setHasActed(true);
+        
+        // Place big blind
+        if (bigBlindAmount > bigBlindPlayer.getCredit()) {
+            bigBlindAmount = bigBlindPlayer.getCredit(); // All-in
+        }
+        bigBlindPlayer.setCredit(bigBlindPlayer.getCredit() - bigBlindAmount);
+        bigBlindPlayer.setCurrentBet(bigBlindAmount);
+        bigBlindPlayer.setHasActed(true);
+        
+        // Set call amount to big blind
+        game.setCallAmount(bigBlindAmount);
+        
+        // Set current player to the one after big blind
+        game.setCurrentPlayerIndex((game.getBigBlindIndex() + 1) % game.getPlayers().size());
+        
+        // Set game status to preflop
+        game.setGameStatus(GameStatus.PREFLOP);
+        
+        // Save player states
+        playerRepository.save(smallBlindPlayer);
+        playerRepository.save(bigBlindPlayer);
+        playerRepository.flush();
+        
+        // Save game state
+        gameRepository.save(game);
+        gameRepository.flush();
+        
+        return game;
+    }
+    
+    private Game validateGameAndPlayer(Long gameId, String token) {
+        User user = userRepository.findByToken(token);
+        Game game = gameRepository.findByid(gameId);
+        if (user == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid token");
+        }
+        if (game == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found");
+        }
+        return game;
+    }
+    
+    private Player getPlayerByToken(Game game, String token) {
+        User user = userRepository.findByToken(token);
+        for (Player player : game.getPlayers()) {
+            if (player.getUserId().equals(user.getId())) {
+                return player;
+            }
+        }
+        throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Player not part of this game");
+    }
 
+    public List<Player> determineWinners(Long gameId) {
         List<Player> players = game.getPlayers();
         List<String> communityCards = game.getCommunityCards();
+      
+       Game game = gameRepository.findByid(gameId);
+        if (game == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found");
+        }
         
         if (communityCards.size() < 5) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Not enough community cards to determine winner");

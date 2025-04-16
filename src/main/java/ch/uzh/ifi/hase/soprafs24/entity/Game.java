@@ -21,7 +21,7 @@ public class Game implements Serializable{
 
     
     @Column(nullable = false)
-    public int creatorId;
+    public Long creatorId;
 
     @Column(nullable = false)
     private Boolean isPublic;
@@ -69,7 +69,14 @@ public class Game implements Serializable{
     private int maximalPlayers;    
 
     @Column(nullable = false)
-    private Long startCredit;      
+    private Long startCredit; 
+
+    @Column(nullable = true)
+    private int currentPlayerIndex;
+    
+    @Column(nullable = true)
+    private int lastRaisePlayerIndex;   
+      
 
     public String getPassword(){
         return password;
@@ -144,10 +151,10 @@ public class Game implements Serializable{
         return maximalPlayers;
     }
 
-    public void setCreatorId(int creatorId){
+    public void setCreatorId(Long creatorId){
         this.creatorId=creatorId;
     }
-    public int getCreatorId(){
+    public Long getCreatorId(){
         return creatorId;
     }
 
@@ -262,6 +269,104 @@ public class Game implements Serializable{
     public void setNumberOfPlayers(int numberOfPlayers) {
         this.numberOfPlayers = numberOfPlayers;
     }
+    // Add these fields to the Game class
+    
+    
+    // Add these methods to the Game class
+    public int getCurrentPlayerIndex() {
+        return currentPlayerIndex;
+    }
+    
+    public void setCurrentPlayerIndex(int currentPlayerIndex) {
+        this.currentPlayerIndex = currentPlayerIndex;
+    }
+    
+    public int getLastRaisePlayerIndex() {
+        return lastRaisePlayerIndex;
+    }
+    
+    public void setLastRaisePlayerIndex(int lastRaisePlayerIndex) {
+        this.lastRaisePlayerIndex = lastRaisePlayerIndex;
+    }
+    
+    /**
+     * Move to the next active player
+     */
+    public void moveToNextPlayer() {
+        do {
+            currentPlayerIndex = (currentPlayerIndex + 1) % players.size();
+        } while (players.get(currentPlayerIndex).getHasFolded());
+    }
+    
+    /**
+     * Reset player actions for a new betting round
+     */
+    public void resetPlayerActions() {
+        for (Player player : players) {
+            player.setHasActed(false);
+        }
+        // Start with player after small blind
+        currentPlayerIndex = (smallBlindIndex + 1) % players.size();
+        lastRaisePlayerIndex = -1;
+    }
+    
+    /**
+     * Check if the current betting round is complete
+     */
+    public boolean isBettingRoundComplete() {
+        // If there's only one player not folded, betting is complete
+        int activePlayers = 0;
+        for (Player player : players) {
+            if (!player.getHasFolded()) {
+                activePlayers++;
+            }
+        }
+        
+        if (activePlayers <= 1) {
+            return true;
+        }
+        
+        // Check if all active players have acted and bets are equal
+        boolean allActed = true;
+        Long currentBet = null;
+        
+        for (Player player : players) {
+            if (!player.getHasFolded()) {
+                if (!player.getHasActed()) {
+                    allActed = false;
+                    break;
+                }
+                
+                if (currentBet == null) {
+                    currentBet = player.getCurrentBet();
+                } else if (!currentBet.equals(player.getCurrentBet())) {
+                    return false;
+                }
+            }
+        }
+        
+        return allActed;
+    }
+    
+    /**
+     * Move chips from player bets to the pot
+     */
+    public void collectBetsIntoPot() {
+        for (Player player : players) {
+            if (pot == null) {
+                pot = 0L;
+            }
+            pot += player.getCurrentBet();
+            player.setCurrentBet(0L);
+        }
+    }
+
+    public int getSmallBlindIndex() {
+        return smallBlindIndex;
+    }
+    
+    public int getBigBlindIndex() {
+        return bigBlindIndex;
 
     public int getSmallBlind() {
         return smallBlind;

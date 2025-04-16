@@ -30,7 +30,7 @@ class GameRepositoryTest {
      */
     private Game createTestGame(boolean isPublic) {
         Game game = new Game();
-        game.setCreatorId(1);
+        game.setCreatorId(1L);
         game.setIsPublic(isPublic);
         game.setMaximalPlayers(6);
         game.setStartCredit(1000L);
