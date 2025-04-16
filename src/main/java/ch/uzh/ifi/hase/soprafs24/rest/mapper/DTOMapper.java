@@ -48,7 +48,6 @@ public interface DTOMapper {
   @Mapping(source = "level", target = "level")
   UserGetDTO convertEntityToUserGetDTO(User user);
 
-  @Mapping(source = "creatorId", target = "creatorId")
   @Mapping(source = "password", target = "password")
   @Mapping(source = "isPublic", target = "isPublic")
   @Mapping(source = "maximalPlayers", target = "maximalPlayers")
@@ -65,13 +64,23 @@ public interface DTOMapper {
   @Mapping(target = "players", ignore = true)
   @Mapping(target = "spectators", ignore = true)
   @Mapping(target = "communityCardsAsObjects", ignore = true)
+  @Mapping(source = "smallBlind", target = "smallBlind")
+  @Mapping(source = "bigBlind", target = "bigBlind")
   Game convertCreateGameDTOToGameEntity(GameCreationPostDTO gamePostDTO);
+
+
 
   @Mapping(source = "isPublic", target = "isPublic")
   @Mapping(source = "id", target = "id")
-  @Mapping(source = "password", target = "password")
   @Mapping(source = "maximalPlayers", target = "maximalPlayers")
   @Mapping(source = "startCredit", target = "startCredit")
+  @Mapping(source = "smallBlind", target = "smallBlind") 
+  @Mapping(source = "bigBlind", target = "bigBlind")
+  @Mapping(source = "smallBlindIndex", target = "smallBlindIndex")
+  @Mapping(source = "pot", target = "pot")
+  @Mapping(source = "callAmount", target = "callAmount")
+  @Mapping(source = "gameStatus", target = "gameStatus")
+  @Mapping(source = "communityCards", target = "communityCards")
   GameGetDTO convertEntityToGameGetDTO(Game game);
 
 

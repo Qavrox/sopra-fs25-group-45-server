@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class Deck implements Serializable {
@@ -127,5 +128,23 @@ public class Deck implements Serializable {
     @Override
     public String toString() {
         return "Deck with " + cards.size() + " cards";
+    }
+    
+    /**
+     * Creates a deck excluding the specified cards.
+     * @param knownCards set of cards to exclude from the deck
+     * @return a list of cards excluding the known cards
+     */
+    public static List<Card> createDeckExcluding(Set<Card> knownCards) {
+        List<Card> deck = new ArrayList<>();
+        for (Card.Suit suit : Card.Suit.values()) {
+            for (Card.Rank rank : Card.Rank.values()) {
+                Card card = new Card(suit, rank);
+                if (!knownCards.contains(card)) {
+                    deck.add(card);
+                }
+            }
+        }
+        return deck;
     }
 }

@@ -14,14 +14,14 @@ public class GameGetDTO {
   private Boolean isPublic;
   private int maximalPlayers;
   private int startCredit;
+  private int smallBlind;
+  private int bigBlind;
   private GameStatus gameStatus;
   private int pot;
   private int callAmount;
   private int smallBlindIndex;
-  private int bigBlindIndex;
   private int numberOfPlayers;
   private List<Integer> communityCards;
-  private List<Integer> spectators;
   private List<Player> players;
 
 
@@ -93,12 +93,7 @@ public class GameGetDTO {
   public void setSmallBlindIndex(int smallBlindIndex) {
     this.smallBlindIndex = smallBlindIndex;
   }
-  public int getBigBlindIndex() {
-    return bigBlindIndex;
-  }
-  public void setBigBlindIndex(int bigBlindIndex) {
-    this.bigBlindIndex = bigBlindIndex;
-  }
+
   public int getNumberOfPlayers() {
     return numberOfPlayers;
   }
@@ -112,17 +107,26 @@ public class GameGetDTO {
   public void setCommunityCards(List<Integer> communityCards) {
     this.communityCards = communityCards;
   }
-  public List<Integer> getSpectators() {
-    return spectators;
-  }
-  public void setSpectators(List<Integer> spectators) {
-    this.spectators = spectators;
-  }
   public List<Player> getPlayers() {
     return players;
   }
   public void setPlayers(List<Player> players) {
     this.players = players;
   }
+
+  public int getSmallBlind() {
+    return smallBlind;
+  }
+  public void setSmallBlind(int smallBlind) {
+    this.smallBlind = smallBlind;
+  }
+  public int getBigBlind() {
+    return bigBlind;
+  }
+  public void setBigBlind(int bigBlind) {
+    this.bigBlind = bigBlind;
+  }
+
+
     
 }

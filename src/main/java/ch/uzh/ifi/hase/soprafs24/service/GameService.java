@@ -3,24 +3,24 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.HttpClientErrorException.Forbidden;
 import org.springframework.web.server.ResponseStatusException;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 
 import javax.transaction.Transactional;
 
 import ch.uzh.ifi.hase.soprafs24.constant.GameStatus;
+import ch.uzh.ifi.hase.soprafs24.constant.Card;
 import ch.uzh.ifi.hase.soprafs24.entity.Game;
 import ch.uzh.ifi.hase.soprafs24.entity.Player;
 import ch.uzh.ifi.hase.soprafs24.entity.User;
+import ch.uzh.ifi.hase.soprafs24.helpers.OddsCalculator;
 import ch.uzh.ifi.hase.soprafs24.repository.GameRepository;
 import ch.uzh.ifi.hase.soprafs24.repository.PlayerRepository;
 import ch.uzh.ifi.hase.soprafs24.repository.UserRepository;
 import ch.uzh.ifi.hase.soprafs24.constant.PlayerAction;
+import ch.uzh.ifi.hase.soprafs24.service.Authenticator;
 
 @Service
 @Transactional
@@ -29,6 +29,7 @@ public class GameService {
     private final GameRepository gameRepository;
     private final UserRepository userRepository;
     private final PlayerRepository playerRepository;
+    private final Authenticator authenticator;
 
     @Autowired
     public GameService(@Qualifier("gameRepository") GameRepository gameRepository,
@@ -36,10 +37,11 @@ public class GameService {
         this.gameRepository = gameRepository;
         this.userRepository = userRepository;
         this.playerRepository = playerRepository;
+        this.authenticator = new Authenticator(userRepository, gameRepository);
     }    
 
     
-    public Game createNewGame(Game newgame){
+    public Game createNewGame(Game newgame, String token){
 
         if(newgame.getMaximalPlayers() < 2 || newgame.getMaximalPlayers() > 10){
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Number of players must be between 2 and 10");
@@ -57,6 +59,8 @@ public class GameService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Creator ID must not be null");
         }
 
+        authenticator.checkTokenValidity(token);
+
         newgame = gameRepository.save(newgame);
         gameRepository.flush();
 
@@ -66,27 +70,27 @@ public class GameService {
 
     public Game joinGame(Long gameId, String userToken, String password){
 
+        //Check if the token is valid
+        authenticator.checkTokenValidity(userToken);
+
+
         Game jointGame = gameRepository.findByid(gameId);
         if (jointGame == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found");
         }
         if(!(jointGame.getIsPublic())){
             if(!(Objects.equals(jointGame.getPassword(), password))){
-                System.out.println("Input password: " + password);
-                System.out.println("Game password: " + jointGame.getPassword());
                 throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Wrong password. Entry to game DENIED.");
             }
         }
         //Password checked OR its public
         User user = userRepository.findByToken(userToken);
-        if (user == null) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User not found");
-        }
+
         if (jointGame.getPlayers().size() >= jointGame.getMaximalPlayers()) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Game is full. Entry to game DENIED.");
         }
+        
         List<String> hand = new ArrayList<>();
-        hand.add("0");
         Player jointPlayer = new Player(user.getId(), hand, jointGame);
         jointGame.addPlayer(jointPlayer);
 
@@ -94,7 +98,10 @@ public class GameService {
     }
 
     
-    public List<Game> getAllPublicGames() {
+    public List<Game> getAllPublicGames(String token) {
+        // Check if the token is valid
+        authenticator.checkTokenValidity(token);
+
         List<Game> allGames = gameRepository.findAll();
         List<Game> publicGames = new ArrayList<>();
 
@@ -107,10 +114,15 @@ public class GameService {
     }
     
     public Game getGameById(Long id, String authenticatorToken) {
+
         Game game = gameRepository.findByid(id);
         if (game == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found");
         }
+
+        
+
+        // Check if the token is the same as any of the players in the game (This is not the same as checkTokenValidity, but it indirectly checks the validity of the token)
         if(!(game.getIsPublic())){
             User user = userRepository.findByToken(authenticatorToken);
             List<Player> players = game.getPlayers();
@@ -129,9 +141,22 @@ public class GameService {
 
     public Game startRound(Long gameId, String token){
         Game game = gameRepository.findByid(gameId);
+
         if (game == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found");
+        }        
+
+        //this is a mess... but basically, we're just checking that the creator of the game is the one who is trying to start the game
+        int gameCreatorIdInt = game.getCreatorId();
+        long gameCreatorId = (long) gameCreatorIdInt;
+
+        User gameCreator = userRepository.findByid(gameCreatorId);
+
+        User user = userRepository.findByToken(token);
+        if(gameCreator.getToken()!=user.getToken()){
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You are not the creator of the game. You cannot start the game.");
         }
+
         if (game.getPlayers().size() < 2) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Not enough players to start the game");
         }
@@ -547,4 +572,57 @@ public class GameService {
         }
         throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Player not part of this game");
     }
+
+    public List<Player> determineWinners(Long gameId) {
+        List<Player> players = game.getPlayers();
+        List<String> communityCards = game.getCommunityCards();
+      
+       Game game = gameRepository.findByid(gameId);
+        if (game == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found");
+        }
+        
+        if (communityCards.size() < 5) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Not enough community cards to determine winner");
+        }
+
+        // Convert community cards to Card objects
+        List<Card> communityCardObjects = new ArrayList<>();
+        for (String cardStr : communityCards) {
+            communityCardObjects.add(Card.fromShortString(cardStr));
+        }
+
+        // Evaluate each player's hand
+        List<Player> winners = new ArrayList<>();
+        OddsCalculator.HandValue bestHandValue = null;
+
+        for (Player player : players) {
+            // Convert player's hand to Card objects
+            List<Card> playerCards = new ArrayList<>();
+            for (String cardStr : player.getHand()) {
+                playerCards.add(Card.fromShortString(cardStr));
+            }
+
+            // Combine player's cards with community cards
+            List<Card> allCards = new ArrayList<>(playerCards);
+            allCards.addAll(communityCardObjects);
+
+            // Evaluate the hand
+            OddsCalculator.HandValue currentHandValue = OddsCalculator.evaluateHand(allCards);
+
+            // Compare with best hand so far
+            if (bestHandValue == null || currentHandValue.compareTo(bestHandValue) > 0) {
+                // New best hand found
+                winners.clear();
+                winners.add(player);
+                bestHandValue = currentHandValue;
+            } else if (currentHandValue.compareTo(bestHandValue) == 0) {
+                // Tied with best hand
+                winners.add(player);
+            }
+        }
+
+        return winners;
+    }
+
 }
