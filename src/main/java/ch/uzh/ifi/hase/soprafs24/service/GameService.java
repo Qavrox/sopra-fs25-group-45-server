@@ -147,9 +147,7 @@ public class GameService {
         }        
 
         //this is a mess... but basically, we're just checking that the creator of the game is the one who is trying to start the game
-        int gameCreatorIdInt = game.getCreatorId();
-        long gameCreatorId = (long) gameCreatorIdInt;
-
+        Long gameCreatorId = game.getCreatorId();
         User gameCreator = userRepository.findByid(gameCreatorId);
 
         User user = userRepository.findByToken(token);
@@ -574,13 +572,13 @@ public class GameService {
     }
 
     public List<Player> determineWinners(Long gameId) {
-        List<Player> players = game.getPlayers();
-        List<String> communityCards = game.getCommunityCards();
-      
-       Game game = gameRepository.findByid(gameId);
+        Game game = gameRepository.findByid(gameId);
         if (game == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found");
         }
+
+        List<Player> players = game.getPlayers();
+        List<String> communityCards = game.getCommunityCards();
         
         if (communityCards.size() < 5) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Not enough community cards to determine winner");

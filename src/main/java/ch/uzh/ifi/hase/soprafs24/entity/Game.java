@@ -13,7 +13,7 @@ import ch.uzh.ifi.hase.soprafs24.constant.GameStatus;
 
 @Entity
 @Table(name = "GAME")
-public class Game implements Serializable{
+public class Game implements Serializable {
 
     @Id
     @GeneratedValue
@@ -131,6 +131,10 @@ public class Game implements Serializable{
 
     public int getSmallBlindIndex(){
         return smallBlindIndex;
+    }
+
+    public int getBigBlindIndex() {
+        return (smallBlindIndex + 1) % numberOfPlayers;
     }
 
     public void setSmallBlindIndex(int smallBlindIndex){
@@ -360,14 +364,7 @@ public class Game implements Serializable{
             player.setCurrentBet(0L);
         }
     }
-
-    public int getSmallBlindIndex() {
-        return smallBlindIndex;
-    }
     
-    public int getBigBlindIndex() {
-        return bigBlindIndex;
-
     public int getSmallBlind() {
         return smallBlind;
     }

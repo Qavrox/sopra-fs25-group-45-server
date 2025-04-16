@@ -75,7 +75,7 @@ public class GameServiceTest {
         game.setGameStatus(GameStatus.RIVER);
         game.setMaximalPlayers(5);
         game.setStartCredit(1000L);
-        game.setCreatorId(1);
+        game.setCreatorId(1L);
         game.setIsPublic(true);
         game.setSmallBlind(1);
         game.setBigBlind(1);
@@ -89,7 +89,7 @@ public class GameServiceTest {
         privateGame.setGameStatus(GameStatus.RIVER);
         privateGame.setMaximalPlayers(5);
         privateGame.setStartCredit(1000L);
-        privateGame.setCreatorId(1);
+        privateGame.setCreatorId(1L);
         privateGame.setIsPublic(false);
         privateGame.setPassword("password");
         privateGame.setSmallBlind(1);
@@ -375,7 +375,7 @@ public class GameServiceTest {
         gameWithOnePlayer.setId(4L);
         gameWithOnePlayer.setMaximalPlayers(5);
         gameWithOnePlayer.setStartCredit(1000L);
-        gameWithOnePlayer.setCreatorId(1);
+        gameWithOnePlayer.setCreatorId(1L);
         gameWithOnePlayer.setIsPublic(true);
         gameWithOnePlayer.addPlayer(new Player(1L, new ArrayList<>(), gameWithOnePlayer));
         when(gameRepository.findByid(4L)).thenReturn(gameWithOnePlayer);

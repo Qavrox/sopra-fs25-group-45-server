@@ -62,7 +62,6 @@ public interface DTOMapper {
   @Mapping(target = "currentPlayerIndex", ignore = true)
   @Mapping(target = "lastRaisePlayerIndex", ignore = true)
   @Mapping(target = "players", ignore = true)
-  @Mapping(target = "spectators", ignore = true)
   @Mapping(target = "communityCardsAsObjects", ignore = true)
   @Mapping(source = "smallBlind", target = "smallBlind")
   @Mapping(source = "bigBlind", target = "bigBlind")

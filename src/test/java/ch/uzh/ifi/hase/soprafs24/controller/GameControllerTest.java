@@ -66,7 +66,7 @@ public class GameControllerTest {
         game.setPlayers(Collections.emptyList());
         game.setStatus(GameStatus.WAITING);
         game.setCommunityCards(Collections.emptyList());
-        game.setCreatorId(1);        
+        game.setCreatorId(1L);        
 
         List<Game> allGames = Collections.singletonList(game);
 
@@ -126,7 +126,7 @@ public class GameControllerTest {
             game.setPlayers(Collections.emptyList());
             game.setStatus(GameStatus.WAITING);
             game.setCommunityCards(Collections.emptyList());
-            game.setCreatorId(1);        
+            game.setCreatorId(1L);        
 
             // when
             given(gameService.getGameById(game.getId(), user.getToken())).willReturn(game);
@@ -177,7 +177,7 @@ public class GameControllerTest {
         game.setPlayers(Collections.emptyList());
         game.setStatus(GameStatus.WAITING);
         game.setCommunityCards(Collections.emptyList());
-        game.setCreatorId(1);
+        game.setCreatorId(1L);
 
 
         // when
