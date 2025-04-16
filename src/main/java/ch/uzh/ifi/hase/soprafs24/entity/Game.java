@@ -21,7 +21,7 @@ public class Game implements Serializable{
 
     
     @Column(nullable = false)
-    public int creatorId;
+    public Long creatorId;
 
     @Column(nullable = false)
     private Boolean isPublic;
@@ -146,10 +146,10 @@ public class Game implements Serializable{
         return maximalPlayers;
     }
 
-    public void setCreatorId(int creatorId){
+    public void setCreatorId(Long creatorId){
         this.creatorId=creatorId;
     }
-    public int getCreatorId(){
+    public Long getCreatorId(){
         return creatorId;
     }
 

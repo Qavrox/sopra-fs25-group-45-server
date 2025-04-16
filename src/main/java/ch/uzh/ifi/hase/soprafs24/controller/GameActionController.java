@@ -2,21 +2,27 @@ package ch.uzh.ifi.hase.soprafs24.controller;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import ch.uzh.ifi.hase.soprafs24.constant.PlayerAction;
 import ch.uzh.ifi.hase.soprafs24.entity.Game;
+import ch.uzh.ifi.hase.soprafs24.entity.Player;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.GameGetDTO;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.PlayerActionPostDTO;
 import ch.uzh.ifi.hase.soprafs24.rest.mapper.DTOMapper;
 import ch.uzh.ifi.hase.soprafs24.service.GameService;
+import ch.uzh.ifi.hase.soprafs24.service.UserService;
+import ch.uzh.ifi.hase.soprafs24.entity.User;
 
 @RestController
 public class GameActionController {
 
     private final GameService gameService;
+    private final UserService userService;
 
-    GameActionController(GameService gameService) {
+    GameActionController(GameService gameService, UserService userService) {
         this.gameService = gameService;
+        this.userService = userService;
     }
 
     @PostMapping("/games/{gameId}/start-betting")
@@ -24,7 +30,20 @@ public class GameActionController {
     @ResponseBody
     public GameGetDTO startBettingRound(@PathVariable("gameId") Long gameId, @RequestHeader("Authorization") String authenticatorToken) {
         String token = authenticatorToken.substring(7);
-        Game game = gameService.startBettingRound(gameId);
+        User user = userService.getUserByToken(token);
+        if (user == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid token");
+        }
+
+        Game game = gameService.getGameById(gameId, token);
+        if (game == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found");
+        }
+        if (!user.getId().equals(game.getCreatorId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only the host can start the game");
+        }
+
+        game = gameService.startBettingRound(gameId);
         GameGetDTO gameGetDTO = DTOMapper.INSTANCE.convertEntityToGameGetDTO(game);
         return gameGetDTO;
     }
@@ -38,14 +57,36 @@ public class GameActionController {
             @RequestHeader("Authorization") String authenticatorToken) {
         
         String token = authenticatorToken.substring(7);
-        
-        Game game = gameService.processPlayerAction(
+        User user = userService.getUserByToken(token);
+        if (user == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid token");
+        }
+
+        Game game = gameService.getGameById(gameId, token);
+        if (game == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found");
+        }
+
+        boolean isUserPlayer = false;
+        for (Player player : game.getPlayers()) {
+            if (player.getId().equals(playerActionDTO.getPlayerId()) && 
+                player.getUserId().equals(user.getId())) {
+                isUserPlayer = true;
+                break;
+            }
+        }
+
+        if (!isUserPlayer) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You can only perform actions for yourself");
+        }
+
+        Game result = gameService.processPlayerAction(
                 gameId,
                 playerActionDTO.getPlayerId(),
                 playerActionDTO.getAction(),
                 playerActionDTO.getAmount());
         
-        GameGetDTO gameGetDTO = DTOMapper.INSTANCE.convertEntityToGameGetDTO(game);
+        GameGetDTO gameGetDTO = DTOMapper.INSTANCE.convertEntityToGameGetDTO(result);
         return gameGetDTO;
 
     }
