@@ -16,7 +16,7 @@ public class OddsCalculatorTest {
         int opponents = 1;
         int iterations = 10000;
 
-        double winProbability = OddsCalculator.calculateOdds(playerHand, board, opponents, iterations);
+        double winProbability = OddsCalculator.calculateOddsRaw(playerHand, board, opponents, iterations);
         
         // AA vs random hands preflop wins about 85% of the time
         assertTrue(winProbability > 0.82 && winProbability < 0.88, 
@@ -32,7 +32,7 @@ public class OddsCalculatorTest {
         int opponents = 1;
         int iterations = 10000;
 
-        double winProbability = OddsCalculator.calculateOdds(playerHand, board, opponents, iterations);
+        double winProbability = OddsCalculator.calculateOddsRaw(playerHand, board, opponents, iterations);
         
         // Debug shows win rate around 84%
         assertTrue(winProbability > 0.80 && winProbability < 0.88,
@@ -48,7 +48,7 @@ public class OddsCalculatorTest {
         int opponents = 1;
         int iterations = 10000;
 
-        double winProbability = OddsCalculator.calculateOdds(playerHand, board, opponents, iterations);
+        double winProbability = OddsCalculator.calculateOddsRaw(playerHand, board, opponents, iterations);
         
         // Flush draw vs random hands on flop wins about 70% of the time based on our debug output
         assertTrue(winProbability > 0.65 && winProbability < 0.75,
@@ -64,7 +64,7 @@ public class OddsCalculatorTest {
         int opponents = 1; 
         int iterations = 10000;
 
-        double winProbability = OddsCalculator.calculateOdds(playerHand, board, opponents, iterations);
+        double winProbability = OddsCalculator.calculateOddsRaw(playerHand, board, opponents, iterations);
         
         // Open-ended straight draw has better odds than we initially thought (based on debug output)
         assertTrue(winProbability > 0.45 && winProbability < 0.65,
@@ -80,7 +80,7 @@ public class OddsCalculatorTest {
         int opponents = 1;
         int iterations = 10000;
 
-        double winProbability = OddsCalculator.calculateOdds(playerHand, board, opponents, iterations);
+        double winProbability = OddsCalculator.calculateOddsRaw(playerHand, board, opponents, iterations);
         
         // Debug shows win rate around 97%
         assertTrue(winProbability > 0.95 && winProbability < 0.99,
@@ -96,7 +96,7 @@ public class OddsCalculatorTest {
         int opponents = 4;
         int iterations = 10000;
 
-        double winProbability = OddsCalculator.calculateOdds(playerHand, board, opponents, iterations);
+        double winProbability = OddsCalculator.calculateOddsRaw(playerHand, board, opponents, iterations);
         
         // Top pair against multiple opponents has more variance
         assertTrue(winProbability > 0.40 && winProbability < 0.60,
@@ -112,7 +112,7 @@ public class OddsCalculatorTest {
         int opponents = 1;
         int iterations = 10000;
 
-        double winProbability = OddsCalculator.calculateOdds(playerHand, board, opponents, iterations);
+        double winProbability = OddsCalculator.calculateOddsRaw(playerHand, board, opponents, iterations);
         
         // Debug shows win rate around 87%
         assertTrue(winProbability > 0.85 && winProbability < 0.90,
@@ -127,7 +127,7 @@ public class OddsCalculatorTest {
         int opponents = 1;
         int iterations = 1000; // Fewer iterations needed since all cards are known
 
-        double winProbability = OddsCalculator.calculateOdds(playerHand, board, opponents, iterations);
+        double winProbability = OddsCalculator.calculateOddsRaw(playerHand, board, opponents, iterations);
         
         // Random opponents won't always have a straight, so the win rate should be high
         assertTrue(winProbability > 0.85,
@@ -143,7 +143,7 @@ public class OddsCalculatorTest {
         int opponents = 3;
         int iterations = 10000;
 
-        double winProbability = OddsCalculator.calculateOdds(playerHand, board, opponents, iterations);
+        double winProbability = OddsCalculator.calculateOddsRaw(playerHand, board, opponents, iterations);
         
         // Pocket queens against 3 random hands preflop should win about 60% of the time
         assertTrue(winProbability > 0.55 && winProbability < 0.70,
@@ -159,7 +159,7 @@ public class OddsCalculatorTest {
         int opponents = 2;
         int iterations = 10000;
 
-        double winProbability = OddsCalculator.calculateOdds(playerHand, board, opponents, iterations);
+        double winProbability = OddsCalculator.calculateOddsRaw(playerHand, board, opponents, iterations);
         
         // AK off suit against 2 random hands preflop should win about 50% of the time
         assertTrue(winProbability > 0.45 && winProbability < 0.60,
@@ -175,7 +175,7 @@ public class OddsCalculatorTest {
         int opponents = 1;
         int iterations = 100;
 
-        double winProbability = OddsCalculator.calculateOdds(playerHand, board, opponents, iterations);
+        double winProbability = OddsCalculator.calculateOddsRaw(playerHand, board, opponents, iterations);
         
         // Since the opponent gets random cards, not deterministic cards we control
         assertTrue(winProbability > 0.85, 
@@ -206,7 +206,7 @@ public class OddsCalculatorTest {
         
         // Run calculation with fewer iterations for quick debugging
         int iterations = 1000;
-        double winProbability = OddsCalculator.calculateOdds(playerHand, board, opponents, iterations);
+        double winProbability = OddsCalculator.calculateOddsRaw(playerHand, board, opponents, iterations);
         
         System.out.println("Win probability: " + winProbability);
         System.out.println("================================\n");

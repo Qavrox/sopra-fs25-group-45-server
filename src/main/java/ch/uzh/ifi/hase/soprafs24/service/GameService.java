@@ -548,28 +548,6 @@ public class GameService {
         
         return game;
     }
-    
-    private Game validateGameAndPlayer(Long gameId, String token) {
-        User user = userRepository.findByToken(token);
-        Game game = gameRepository.findByid(gameId);
-        if (user == null) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid token");
-        }
-        if (game == null) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found");
-        }
-        return game;
-    }
-    
-    private Player getPlayerByToken(Game game, String token) {
-        User user = userRepository.findByToken(token);
-        for (Player player : game.getPlayers()) {
-            if (player.getUserId().equals(user.getId())) {
-                return player;
-            }
-        }
-        throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Player not part of this game");
-    }
 
     public List<Player> determineWinners(Long gameId) {
         Game game = gameRepository.findByid(gameId);
@@ -621,6 +599,44 @@ public class GameService {
         }
 
         return winners;
+    }
+
+    public double calculateWinProbability(Long gameId, Long userId) {
+        Game game = gameRepository.findByid(gameId);
+        if (game == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found");
+        }
+
+        // Find the player
+        Player player = null;
+        for (Player p : game.getPlayers()) {
+            if (p.getUserId().equals(userId)) {
+                player = p;
+                break;
+            }
+        }
+
+        if (player == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Player not found in game");
+        }
+
+        // Get the player's hand and community cards
+        List<String> playerHand = player.getHand();
+        List<String> communityCards = game.getCommunityCards();
+
+        // Convert cards to Card objects
+        List<Card> playerCards = new ArrayList<>();
+        for (String cardStr : playerHand) {
+            playerCards.add(Card.fromShortString(cardStr));
+        }
+
+        List<Card> communityCardObjects = new ArrayList<>();
+        for (String cardStr : communityCards) {
+            communityCardObjects.add(Card.fromShortString(cardStr));
+        }
+
+        // Calculate win probability using OddsCalculator
+        return OddsCalculator.calculateWinProbability(playerCards, communityCardObjects, game.getPlayers().size());
     }
 
 }
