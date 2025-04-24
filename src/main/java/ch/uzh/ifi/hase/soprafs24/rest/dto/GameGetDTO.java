@@ -23,6 +23,7 @@ public class GameGetDTO {
   private int numberOfPlayers;
   private List<Integer> communityCards;
   private List<Player> players;
+  private Long currentPlayerId;
 
 
 
@@ -56,15 +57,19 @@ public class GameGetDTO {
   public void setMaximalPlayers(int maximalPlayers) {
     this.maximalPlayers = maximalPlayers;
   }
+
   public int getStartCredit() {
     return startCredit;
   }
+
   public void setStartCredit(int startCredit) {
     this.startCredit = startCredit;
   }
+
   public Long getCreatorId() {
     return creatorId;
   }
+
   public void setCreatorId(Long creatorId) {
     this.creatorId = creatorId;
   }
@@ -72,24 +77,31 @@ public class GameGetDTO {
   public GameStatus getGameStatus() {
     return gameStatus;
   }
+
   public void setGameStatus(GameStatus gameStatus) {
     this.gameStatus = gameStatus;
   }
+
   public int getPot() {
     return pot;
   }
+
   public void setPot(int pot) {
     this.pot = pot;
   }
+
   public int getCallAmount() {
     return callAmount;
   }
+
   public void setCallAmount(int callAmount) {
     this.callAmount = callAmount;
   }
+  
   public int getSmallBlindIndex() {
     return smallBlindIndex;
   }
+
   public void setSmallBlindIndex(int smallBlindIndex) {
     this.smallBlindIndex = smallBlindIndex;
   }
@@ -126,7 +138,12 @@ public class GameGetDTO {
   public void setBigBlind(int bigBlind) {
     this.bigBlind = bigBlind;
   }
+  
+  public Long getCurrentPlayerId() {
+    return currentPlayerId;
+  }
 
-
-    
+  public void setCurrentPlayerId(Long currentPlayerId) {
+    this.currentPlayerId = currentPlayerId;
+  }
 }
