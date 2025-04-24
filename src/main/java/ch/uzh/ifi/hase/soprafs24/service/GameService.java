@@ -149,6 +149,7 @@ public class GameService {
 
         //this is a mess... but basically, we're just checking that the creator of the game is the one who is trying to start the game
         Long gameCreatorId = game.getCreatorId();
+        Long gameCreatorId = game.getCreatorId();
         User gameCreator = userRepository.findByid(gameCreatorId);
 
         User user = userRepository.findByToken(token);
@@ -603,12 +604,44 @@ public class GameService {
     }
 
 
-    public Game deleteGame(Long gameId, String token){
+    public double calculateWinProbability(Long gameId, Long userId) {
         Game game = gameRepository.findByid(gameId);
         if (game == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found");
         }
+              // Find the player
+        Player player = null;
+        for (Player p : game.getPlayers()) {
+            if (p.getUserId().equals(userId)) {
+                player = p;
+                break;
+            }
+        }
 
+        if (player == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Player not found in game");
+        }
+
+        // Get the player's hand and community cards
+        List<String> playerHand = player.getHand();
+        List<String> communityCards = game.getCommunityCards();
+
+        // Convert cards to Card objects
+        List<Card> playerCards = new ArrayList<>();
+        for (String cardStr : playerHand) {
+            playerCards.add(Card.fromShortString(cardStr));
+        }
+
+        List<Card> communityCardObjects = new ArrayList<>();
+        for (String cardStr : communityCards) {
+            communityCardObjects.add(Card.fromShortString(cardStr));
+        }
+
+        // Calculate win probability using OddsCalculator
+        return OddsCalculator.calculateWinProbability(playerCards, communityCardObjects, game.getPlayers().size());
+    }
+
+    public Game deleteGame(Long gameId, String token){
         // Check if the token is the same as the creator of the game in case the token is not empty
         Long gameCreatorIdInt = game.getCreatorId();
         long gameCreatorId = (long) gameCreatorIdInt;

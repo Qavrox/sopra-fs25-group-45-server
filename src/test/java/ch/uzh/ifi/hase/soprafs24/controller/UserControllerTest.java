@@ -105,10 +105,10 @@ public class UserControllerTest {
     mockMvc.perform(postRequest)
         .andExpect(status().isCreated())
         .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-        .andExpect(jsonPath("$.id", is(user.getId().intValue())))
-        .andExpect(jsonPath("$.name", is(user.getName())))
-        .andExpect(jsonPath("$.username", is(user.getUsername())))
-        .andExpect(jsonPath("$.status", is(user.getStatus().toString())))
+        .andExpect(jsonPath("$.user.id", is(user.getId().intValue())))
+        .andExpect(jsonPath("$.user.username", is(user.getUsername())))
+        .andExpect(jsonPath("$.user.displayName", is(user.getName())))
+        .andExpect(jsonPath("$.user.online", is(true)))
         .andExpect(jsonPath("$.token", is(user.getToken())));
   }
 

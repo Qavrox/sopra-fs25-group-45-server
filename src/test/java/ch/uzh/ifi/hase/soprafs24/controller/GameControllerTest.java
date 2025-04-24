@@ -68,6 +68,7 @@ public class GameControllerTest {
         game.setCommunityCards(Collections.emptyList());
         game.setCreatorId(1L);        
 
+
         List<Game> allGames = Collections.singletonList(game);
 
         given(gameService.getAllPublicGames(user.getToken())).willReturn(allGames);
@@ -155,6 +156,30 @@ public class GameControllerTest {
         
     @Test
     public void joinGameTest() throws Exception{
+        // given user
+        User user= new User();
+        user.setName("Firstname Lastname");
+        user.setUsername("firstname@lastname");
+        user.setStatus(UserStatus.OFFLINE);
+        user.setCreationDate(java.time.LocalDate.now());
+        user.setToken("valid-token");
+
+        // given game
+        Game game = new Game();
+        game.setId(1L);
+        game.setIsPublic(true);
+        game.setSmallBlind(1);
+        game.setBigBlind(1);
+        game.setSmallBlindIndex(0);
+        game.setStartCredit(1L);
+        game.setMaximalPlayers(3);
+        game.setPot(1L);
+        game.setCallAmount(1L);
+        game.setPlayers(Collections.emptyList());
+        game.setStatus(GameStatus.WAITING);
+        game.setCommunityCards(Collections.emptyList());
+        game.setCreatorId(1L);
+
         // given user
         User user= new User();
         user.setName("Firstname Lastname");
