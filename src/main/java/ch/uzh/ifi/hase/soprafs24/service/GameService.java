@@ -75,6 +75,8 @@ public class GameService {
 
 
         Game jointGame = gameRepository.findByid(gameId);
+
+
         if (jointGame == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found");
         }
@@ -88,6 +90,13 @@ public class GameService {
 
         if (jointGame.getPlayers().size() >= jointGame.getMaximalPlayers()) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Game is full. Entry to game DENIED.");
+        }
+
+        // Check if the user is already in the game
+        for (Player player : jointGame.getPlayers()) {
+            if (player.getUserId() == user.getId()) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User is already in the game. Entry to game DENIED.");
+            }
         }
         
         List<String> hand = new ArrayList<>();
