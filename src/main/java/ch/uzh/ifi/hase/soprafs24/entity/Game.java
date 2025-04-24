@@ -66,7 +66,10 @@ public class Game implements Serializable {
 
 
     @Column(nullable = false)
-    private int maximalPlayers;    
+    private int maximalPlayers;  
+    
+    @Column(nullable = true)
+    private Long currentPlayerId;
 
     @Column(nullable = false)
     private Long startCredit; 
@@ -76,7 +79,9 @@ public class Game implements Serializable {
     
     @Column(nullable = true)
     private int lastRaisePlayerIndex;   
-      
+
+    @Column(nullable = true)
+    private long userTurnId;
 
     public String getPassword(){
         return password;
@@ -299,6 +304,7 @@ public class Game implements Serializable {
     public void moveToNextPlayer() {
         do {
             currentPlayerIndex = (currentPlayerIndex + 1) % players.size();
+            setCurrentPlayerId(players.get(currentPlayerIndex).getUserId());
         } while (players.get(currentPlayerIndex).getHasFolded());
     }
     
@@ -384,5 +390,21 @@ public class Game implements Serializable {
     }
     public GameStatus getStatus() {
         return gameStatus;
+    }
+
+    public Long getcurrentPlayerId() {
+        // Check if players list is not empty and index is valid
+        if (players != null && !players.isEmpty() && currentPlayerIndex >= 0 && currentPlayerIndex < players.size()) {
+            Player currentPlayer = players.get(currentPlayerIndex);
+            if (currentPlayer != null) {
+                return currentPlayer.getUserId(); // Return the user ID of the current player
+            }
+        }
+        // Return null or throw an exception if the current player cannot be determined
+        return null; 
+    }
+
+    public void setCurrentPlayerId(Long currentPlayerId) {
+        this.currentPlayerId = currentPlayerId;
     }
 }
