@@ -42,59 +42,130 @@ public class GameService {
 
     
     public Game createNewGame(Game newgame, String token){
-
-        if(newgame.getMaximalPlayers() < 2 || newgame.getMaximalPlayers() > 10){
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Number of players must be between 2 and 10");
-        }
-        if(newgame.getStartCredit() <= 0) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Starting credit must be greater than 0");
-        }
-        if(!newgame.getIsPublic() && newgame.getPassword() == null){
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Private games must have a password");
-        }
-        if(newgame.getIsPublic() && newgame.getPassword() != null){
-            newgame.setPassword(null);
-        }
-        if(newgame.getCreatorId() == 0){
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Creator ID must not be null");
-        }
-
+        // Validate the token and find the user
         authenticator.checkTokenValidity(token);
-
+        User creator = userRepository.findByToken(token);
+        if (creator == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Creator not found");
+        }
+        
+        // Validate game creation parameters
+        validateGameCreationParameters(newgame);
+        
+        // Verify creator ID matches token
+        if (!creator.getId().equals(newgame.getCreatorId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Token does not match creator ID");
+        }
+        
+        // Set initial game state and initialize the pot, callAmount
+        initializeGameState(newgame);
+        
+        // Save the game to the database
         newgame = gameRepository.save(newgame);
         gameRepository.flush();
 
         return newgame;
-        
     }
 
-    public Game joinGame(Long gameId, String userToken, String password){
+    /**
+     * Validates all required parameters for game creation
+     */
+    private void validateGameCreationParameters(Game game) {
+        if(game.getMaximalPlayers() < 2 || game.getMaximalPlayers() > 10){
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Number of players must be between 2 and 10");
+        }
+        if(game.getStartCredit() <= 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Starting credit must be greater than 0");
+        }
+        if(!game.getIsPublic() && (game.getPassword() == null || game.getPassword().isEmpty())){
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Private games must have a password");
+        }
+        if(game.getIsPublic() && game.getPassword() != null){
+            game.setPassword(null); // Remove password if the game is public
+        }
+        if(game.getCreatorId() == null || game.getCreatorId() == 0){
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Creator ID must be provided");
+        }
+        if(game.getSmallBlind() <= 0 || game.getBigBlind() <= 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Blind values must be greater than 0");
+        }
+        if(game.getSmallBlind() >= game.getBigBlind()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Small blind must be less than big blind");
+        }
+    }
+    
+    /**
+     * Initializes game state with default values
+     */
+    private void initializeGameState(Game game) {
+        game.setPot(0L);
+        game.setCallAmount(0L);
+        game.setGameStatus(GameStatus.READY);
+        game.setCommunityCards(new ArrayList<>());
+    }
 
-        //Check if the token is valid
+    public synchronized void joinGame(Long gameId, String userToken, String password){
+        // Validate the token and find the user
         authenticator.checkTokenValidity(userToken);
-
-
-        Game jointGame = gameRepository.findByid(gameId);
-        if (jointGame == null) {
+        User user = userRepository.findByToken(userToken);
+        if (user == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found");
+        }
+        
+        // Find the game and validate it exists
+        Game game = gameRepository.findByid(gameId);
+        if (game == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found");
         }
-        if(!(jointGame.getIsPublic())){
-            if(!(Objects.equals(jointGame.getPassword(), password))){
+        
+        // Validate game join conditions
+        validateGameJoinConditions(game, user, password);
+        
+        // Add user as a player if not already in the game
+        addUserAsPlayer(user, game);
+    }
+    
+    /**
+     * Validates conditions for joining a game
+     */
+    private void validateGameJoinConditions(Game game, User user, String password) {
+        // Check password for private games
+        if(!game.getIsPublic()) {
+            if(password == null || !Objects.equals(game.getPassword(), password)){
                 throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Wrong password. Entry to game DENIED.");
             }
         }
-        //Password checked OR its public
-        User user = userRepository.findByToken(userToken);
-
-        if (jointGame.getPlayers().size() >= jointGame.getMaximalPlayers()) {
+        
+        // Check if game is full
+        if (game.getPlayers().size() >= game.getMaximalPlayers()) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Game is full. Entry to game DENIED.");
         }
         
+        // Check if game is in a joinable state
+        if (game.getGameStatus() != null && game.getGameStatus() != GameStatus.READY) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Game has already started. New players cannot join.");
+        }
+    }
+    
+    /**
+     * Adds a user as a player in the game if they're not already in it
+     */
+    private void addUserAsPlayer(User user, Game game) {
+        // Check if user is already in the game
+        for (Player player : game.getPlayers()) {
+            if (player.getUserId().equals(user.getId())) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "User is already in the game");
+            }
+        }
+        
+        // Add user as new player
         List<String> hand = new ArrayList<>();
-        Player jointPlayer = new Player(user.getId(), hand, jointGame);
-        jointGame.addPlayer(jointPlayer);
-
-        return jointGame;
+        Player newPlayer = new Player(user.getId(), hand, game);
+        game.addPlayer(newPlayer);
+        
+        // Save the updated game
+        gameRepository.save(game);
+        gameRepository.flush();
     }
 
     
@@ -639,24 +710,4 @@ public class GameService {
         return OddsCalculator.calculateWinProbability(playerCards, communityCardObjects, game.getPlayers().size());
     }
 
-    public boolean checkUser(String token, Game game) {
-        User user = userRepository.findByToken(token);
-        if (user == null) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found");
-        }
-        if (user.getToken() == null) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not logged in");
-        }
-        
-        List<Player> players = game.getPlayers();
-        for (Player player : players) {
-            if (player.getUserId() == user.getId()) {
-                return true;
-            }
-        }
-
-        return false;
-
- 
-    }
 }
