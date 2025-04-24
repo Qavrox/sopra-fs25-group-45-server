@@ -57,7 +57,7 @@ public class DTOMapperTest {
 
         
     GameCreationPostDTO gamePostDTO = new GameCreationPostDTO();
-    gamePostDTO.setCreatorId(1);
+    gamePostDTO.setCreatorId(1L);
     gamePostDTO.setPublic(true);
     gamePostDTO.setMaximalPlayers(5);
     gamePostDTO.setStartCredit(1000);

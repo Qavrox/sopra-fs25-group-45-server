@@ -2,7 +2,7 @@ package ch.uzh.ifi.hase.soprafs24.rest.dto;
 
 public class GameCreationPostDTO {
 
-    private int creatorId;
+    private Long creatorId;
     private String password;
     private boolean isPublic;
     private int maximalPlayers;
@@ -12,10 +12,10 @@ public class GameCreationPostDTO {
 
 
     
-    public int getCreatorId() {
+    public Long getCreatorId() {
         return creatorId;
     }
-    public void setCreatorId(int creatorId) {
+    public void setCreatorId(Long creatorId) {
         this.creatorId = creatorId;
     }
     public String getPassword() {

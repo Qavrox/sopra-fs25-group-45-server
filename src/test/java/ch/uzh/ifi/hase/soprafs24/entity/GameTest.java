@@ -18,7 +18,7 @@ public class GameTest {
     @BeforeEach
     void setUp() {
         game = new Game();
-        game.setCreatorId(1);
+        game.setCreatorId(1L);
         game.setIsPublic(true);
         game.setMaximalPlayers(6);
         game.setStartCredit(1000L);
