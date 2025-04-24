@@ -9,7 +9,7 @@ import ch.uzh.ifi.hase.soprafs24.service.GameService;
 public class GameGetDTO {
     
   private Long id;
-  private int creatorId;
+  private Long  creatorId;
   private String password;
   private Boolean isPublic;
   private int maximalPlayers;
@@ -62,10 +62,10 @@ public class GameGetDTO {
   public void setStartCredit(int startCredit) {
     this.startCredit = startCredit;
   }
-  public int getCreatorId() {
+  public Long getCreatorId() {
     return creatorId;
   }
-  public void setCreatorId(int creatorId) {
+  public void setCreatorId(Long creatorId) {
     this.creatorId = creatorId;
   }
 

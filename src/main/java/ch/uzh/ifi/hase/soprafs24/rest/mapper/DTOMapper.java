@@ -52,6 +52,17 @@ public interface DTOMapper {
   @Mapping(source = "isPublic", target = "isPublic")
   @Mapping(source = "maximalPlayers", target = "maximalPlayers")
   @Mapping(source = "startCredit", target = "startCredit")
+  @Mapping(target = "id", ignore = true)
+  @Mapping(target = "gameStatus", ignore = true)
+  @Mapping(target = "cardDeck", ignore = true)
+  @Mapping(target = "communityCards", ignore = true)
+  @Mapping(target = "callAmount", ignore = true)
+  @Mapping(target = "pot", ignore = true)
+  @Mapping(target = "numberOfPlayers", ignore = true)
+  @Mapping(target = "currentPlayerIndex", ignore = true)
+  @Mapping(target = "lastRaisePlayerIndex", ignore = true)
+  @Mapping(target = "players", ignore = true)
+  @Mapping(target = "communityCardsAsObjects", ignore = true)
   @Mapping(source = "smallBlind", target = "smallBlind")
   @Mapping(source = "bigBlind", target = "bigBlind")
   Game convertCreateGameDTOToGameEntity(GameCreationPostDTO gamePostDTO);
@@ -74,6 +85,9 @@ public interface DTOMapper {
 
 
   @Mapping(source = "id", target = "id")
+  @Mapping(source = "username", target = "username")
+  @Mapping(source = "status", target = "online")
+  @Mapping(source = "creationDate", target = "createdAt")
   // TODO: fix mapping
   UserFriendDTO convertEntityToUserFriendDTO(User user);
 

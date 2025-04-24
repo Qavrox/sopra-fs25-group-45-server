@@ -232,7 +232,7 @@ public class OddsCalculator {
      * @param iterations   Number of simulation iterations.
      * @return Approximate winning probability.
      */
-    public static double calculateOdds(String[] handStr, String[] boardStr, int numOpponents, int iterations) {
+    public static double calculateOddsRaw(String[] handStr, String[] boardStr, int numOpponents, int iterations) {
         List<Card> playerHand = new ArrayList<>();
         for (String s : handStr) {
             playerHand.add(Card.fromShortString(s));
@@ -299,5 +299,22 @@ public class OddsCalculator {
         }
         
         return totalWeight / iterations;
+    }
+
+    public static double calculateWinProbability(List<Card> playerHand, List<Card> communityCards, int numOpponents) {
+        // Convert player's hand to string array
+        String[] playerHandStr = new String[playerHand.size()];
+        for (int i = 0; i < playerHand.size(); i++) {
+            playerHandStr[i] = playerHand.get(i).toShortString();
+        }
+
+        // Convert community cards to string array
+        String[] communityCardsStr = new String[communityCards.size()];
+        for (int i = 0; i < communityCards.size(); i++) {
+            communityCardsStr[i] = communityCards.get(i).toShortString();
+        }
+
+        // Use 10000 iterations for a good balance of accuracy and performance
+        return calculateOddsRaw(playerHandStr, communityCardsStr, numOpponents, 10000);
     }
 }
