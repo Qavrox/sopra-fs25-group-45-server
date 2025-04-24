@@ -15,6 +15,7 @@ import ch.uzh.ifi.hase.soprafs24.rest.dto.GameGetDTO;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.JoinGamePostDTO;
 import ch.uzh.ifi.hase.soprafs24.service.Authenticator;
 import ch.uzh.ifi.hase.soprafs24.repository.GameRepository;
+import ch.uzh.ifi.hase.soprafs24.entity.User;
 
 @RestController
 public class GameRoomController {
@@ -71,12 +72,18 @@ public class GameRoomController {
     @PostMapping("/games/{gameId}/join")
     @ResponseStatus(HttpStatus.OK)
     @ResponseBody
-    public GameGetDTO joinGame(@PathVariable("gameId") Long id, @RequestBody JoinGamePostDTO gamePostDTO, @RequestHeader("Authorization") String authenticatorToken){
-        String token = authenticatorToken.substring(7);
+    public void joinGame(@PathVariable("gameId") Long id, @RequestBody JoinGamePostDTO gamePostDTO, @RequestHeader("Authorization") String authenticatorToken){
+        
 
-        Game game = gameService.joinGame(id, token, gamePostDTO.getPassword());
-        GameGetDTO gameGetDTO = DTOMapper.INSTANCE.convertEntityToGameGetDTO(game);
-        return gameGetDTO;
+
+        String token = authenticatorToken.substring(7);
+        Game game = gameService.getGameById(id, token);
+        if(gameService.checkUser(token, game)){
+            return;
+        }
+        game = gameService.joinGame(id, token, gamePostDTO.getPassword());
+
+        return;
 
 
     }    

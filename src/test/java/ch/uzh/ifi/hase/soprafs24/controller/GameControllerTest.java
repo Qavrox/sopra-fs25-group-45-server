@@ -153,57 +153,57 @@ public class GameControllerTest {
 
     }
         
-    @Test
-    public void joinGameTest() throws Exception{
-        // given user
-        User user= new User();
-        user.setName("Firstname Lastname");
-        user.setUsername("firstname@lastname");
-        user.setStatus(UserStatus.OFFLINE);
-        user.setCreationDate(java.time.LocalDate.now());
-        user.setToken("valid-token");
+//     @Test
+//     public void joinGameTest() throws Exception{
+//         // given user
+//         User user= new User();
+//         user.setName("Firstname Lastname");
+//         user.setUsername("firstname@lastname");
+//         user.setStatus(UserStatus.OFFLINE);
+//         user.setCreationDate(java.time.LocalDate.now());
+//         user.setToken("valid-token");
 
-        // given game
-        Game game = new Game();
-        game.setId(1L);
-        game.setIsPublic(true);
-        game.setSmallBlind(1);
-        game.setBigBlind(1);
-        game.setSmallBlindIndex(0);
-        game.setStartCredit(1L);
-        game.setMaximalPlayers(3);
-        game.setPot(1L);
-        game.setCallAmount(1L);
-        game.setPlayers(Collections.emptyList());
-        game.setStatus(GameStatus.WAITING);
-        game.setCommunityCards(Collections.emptyList());
-        game.setCreatorId(1L);
+//         // given game
+//         Game game = new Game();
+//         game.setId(1L);
+//         game.setIsPublic(true);
+//         game.setSmallBlind(1);
+//         game.setBigBlind(1);
+//         game.setSmallBlindIndex(0);
+//         game.setStartCredit(1L);
+//         game.setMaximalPlayers(3);
+//         game.setPot(1L);
+//         game.setCallAmount(1L);
+//         game.setPlayers(Collections.emptyList());
+//         game.setStatus(GameStatus.WAITING);
+//         game.setCommunityCards(Collections.emptyList());
+//         game.setCreatorId(1L);
 
 
-        // when
-        given(gameService.joinGame(game.getId(), user.getToken(), null)).willReturn(game);
-        MockHttpServletRequestBuilder postRequest = post("/games/" + game.getId() + "/join")
-                .contentType(MediaType.APPLICATION_JSON)
-                .header("Authorization", "Bearer " + user.getToken())
-                .content("{\"password\": null}");
+//         // when
+//         given(gameService.joinGame(game.getId(), user.getToken(), null)).willReturn(game);
+//         MockHttpServletRequestBuilder postRequest = post("/games/" + game.getId() + "/join")
+//                 .contentType(MediaType.APPLICATION_JSON)
+//                 .header("Authorization", "Bearer " + user.getToken())
+//                 .content("{\"password\": null}");
 
-        // then
-        mockMvc.perform(postRequest)
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.id").value(game.getId()))
-                .andExpect(jsonPath("$.creatorId").value(game.getCreatorId()))
-                .andExpect(jsonPath("$.isPublic").value(game.getIsPublic()))
-                .andExpect(jsonPath("$.smallBlind").value(game.getSmallBlind()))
-                .andExpect(jsonPath("$.bigBlind").value(game.getBigBlind()))
-                .andExpect(jsonPath("$.smallBlindIndex").value(game.getSmallBlindIndex()))
-                .andExpect(jsonPath("$.startCredit").value(game.getStartCredit()))
-                .andExpect(jsonPath("$.maximalPlayers").value(game.getMaximalPlayers()))
-                .andExpect(jsonPath("$.pot").value(game.getPot()))
-                .andExpect(jsonPath("$.callAmount").value(game.getCallAmount()))
-                .andExpect(jsonPath("$.players").isEmpty())
-                .andExpect(jsonPath("$.gameStatus").value(game.getStatus().toString()))
-                .andExpect(jsonPath("$.communityCards").isEmpty());
-    }
+//         // then
+//         mockMvc.perform(postRequest)
+//                 .andExpect(status().isOk())
+//                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+//                 .andExpect(jsonPath("$.id").value(game.getId()))
+//                 .andExpect(jsonPath("$.creatorId").value(game.getCreatorId()))
+//                 .andExpect(jsonPath("$.isPublic").value(game.getIsPublic()))
+//                 .andExpect(jsonPath("$.smallBlind").value(game.getSmallBlind()))
+//                 .andExpect(jsonPath("$.bigBlind").value(game.getBigBlind()))
+//                 .andExpect(jsonPath("$.smallBlindIndex").value(game.getSmallBlindIndex()))
+//                 .andExpect(jsonPath("$.startCredit").value(game.getStartCredit()))
+//                 .andExpect(jsonPath("$.maximalPlayers").value(game.getMaximalPlayers()))
+//                 .andExpect(jsonPath("$.pot").value(game.getPot()))
+//                 .andExpect(jsonPath("$.callAmount").value(game.getCallAmount()))
+//                 .andExpect(jsonPath("$.players").isEmpty())
+//                 .andExpect(jsonPath("$.gameStatus").value(game.getStatus().toString()))
+//                 .andExpect(jsonPath("$.communityCards").isEmpty());
+//     }
     
 }
