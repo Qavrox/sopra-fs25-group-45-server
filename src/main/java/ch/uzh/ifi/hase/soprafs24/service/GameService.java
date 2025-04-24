@@ -639,7 +639,7 @@ public class GameService {
         return OddsCalculator.calculateWinProbability(playerCards, communityCardObjects, game.getPlayers().size());
     }
 
-    public void checkUser(String token, Game game) {
+    public boolean checkUser(String token, Game game) {
         User user = userRepository.findByToken(token);
         if (user == null) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found");
@@ -651,10 +651,12 @@ public class GameService {
         List<Player> players = game.getPlayers();
         for (Player player : players) {
             if (player.getUserId() == user.getId()) {
-                return;
+                return true;
             }
         }
 
+        return false;
+
  
-        }
+    }
 }
