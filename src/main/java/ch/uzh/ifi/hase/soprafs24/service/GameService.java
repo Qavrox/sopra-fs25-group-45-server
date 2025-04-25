@@ -516,10 +516,13 @@ public class GameService {
             case PREFLOP:
                 // Move to flop - place 3 community cards
                 List<String> communityCards = new ArrayList<>();
+                System.err.println("Community cards1: " + communityCards);
                 communityCards.add(game.getRandomCard());
                 communityCards.add(game.getRandomCard());
                 communityCards.add(game.getRandomCard());
+                System.err.println("Community cards2: " + communityCards);
                 game.setCommunityCards(communityCards);
+                System.err.println("Community cards3: " + communityCards);
                 game.setGameStatus(GameStatus.FLOP);
                 break;
                 
@@ -627,6 +630,32 @@ public class GameService {
         playerRepository.save(smallBlindPlayer);
         playerRepository.save(bigBlindPlayer);
         playerRepository.flush();
+
+        game.initializeShuffledDeck();
+
+        // Remove cards from players (violently if needed)
+        for (Player player : game.getPlayers()) {
+            List<String> hand = new ArrayList<>();
+            player.setHand(hand);
+            playerRepository.save(player);
+            playerRepository.flush();
+
+        }
+
+        // Give players two cards 
+        for (Player player : game.getPlayers()) {
+            List<String> hand = new ArrayList<>();
+            hand.add(game.getRandomCard());
+            hand.add(game.getRandomCard());
+
+            player.setHand(hand);
+            playerRepository.save(player);
+            playerRepository.flush();
+
+        }
+
+        // Remove community cards
+        game.setCommunityCards(new ArrayList<>());
         
         // Save game state
         gameRepository.save(game);
