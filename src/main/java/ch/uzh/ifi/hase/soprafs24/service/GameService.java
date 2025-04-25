@@ -598,6 +598,19 @@ public class GameService {
         if (game.getGameStatus() != GameStatus.READY) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Game is not in ready phase");
         }
+
+        //distribute cards
+
+        for (Player player : game.getPlayers()) {
+            List<String> hand = new ArrayList<>();
+            hand.add(game.getRandomCard());
+            hand.add(game.getRandomCard());
+
+            player.setHand(hand);
+            playerRepository.save(player);
+            playerRepository.flush();
+
+        }
         
         // Set small and big blinds
         Player smallBlindPlayer = game.getPlayers().get(game.getSmallBlindIndex());
