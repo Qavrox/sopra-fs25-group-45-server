@@ -72,17 +72,10 @@ public class GameRoomController {
     public void joinGame(@PathVariable("gameId") Long id, @RequestBody JoinGamePostDTO gamePostDTO, @RequestHeader("Authorization") String authenticatorToken){
         String token = authenticatorToken.substring(7);
 
-        try {
-            gameService.joinGame(id, token, gamePostDTO.getPassword());
-        } catch (ResponseStatusException ex) {
-            // If the error is that the user is already in the game (HTTP 409 CONFLICT), silently continue
-            if (ex.getStatus() == HttpStatus.CONFLICT) {
-                // User is already in the game, silently continue
-            } else {
-                // For any other error, rethrow it
-                throw ex;
-            }
-        }
+        // Join the game - this will now handle both new joins and rejoins gracefully
+        gameService.joinGame(id, token, gamePostDTO.getPassword());
+        
+        // Get the game after joining (or attempting to join)
         gameService.getGameById(id, token);
     }    
 

@@ -340,6 +340,20 @@ public class Game implements Serializable {
         boolean allActed = true;
         Long currentBet = null;
         
+        // First, find the first active player's bet to use as a reference
+        for (Player player : players) {
+            if (!player.getHasFolded()) {
+                currentBet = player.getCurrentBet();
+                break;
+            }
+        }
+        
+        // If no active players (shouldn't happen), return true
+        if (currentBet == null) {
+            return true;
+        }
+        
+        // Now check that all active players have acted and their bets match
         for (Player player : players) {
             if (!player.getHasFolded()) {
                 if (!player.getHasActed()) {
@@ -347,9 +361,7 @@ public class Game implements Serializable {
                     break;
                 }
                 
-                if (currentBet == null) {
-                    currentBet = player.getCurrentBet();
-                } else if (!currentBet.equals(player.getCurrentBet())) {
+                if (!currentBet.equals(player.getCurrentBet())) {
                     return false;
                 }
             }

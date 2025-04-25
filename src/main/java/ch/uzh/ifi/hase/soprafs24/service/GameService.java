@@ -122,13 +122,27 @@ public class GameService {
         validateGameJoinConditions(game, user, password);
         
         // Add user as a player if not already in the game
-        addUserAsPlayer(user, game);
+        boolean wasAdded = addUserAsPlayer(user, game);
+        
+        // Make sure to save the game if user was added
+        if (wasAdded) {
+            gameRepository.save(game);
+            gameRepository.flush();
+        }
     }
     
     /**
      * Validates conditions for joining a game
      */
     private void validateGameJoinConditions(Game game, User user, String password) {
+        // Check if user is already in the game
+        for (Player player : game.getPlayers()) {
+            if (player.getUserId().equals(user.getId())) {
+                // Only return early if THIS user is already in the game
+                return;  // This user is already in the game, allow them to "join" again
+            }
+        }
+        
         // Check password for private games
         if(!game.getIsPublic()) {
             if(password == null || !Objects.equals(game.getPassword(), password)){
@@ -149,12 +163,14 @@ public class GameService {
     
     /**
      * Adds a user as a player in the game if they're not already in it
+     * @return true if the user was newly added, false if they were already in the game
      */
-    private void addUserAsPlayer(User user, Game game) {
+    private boolean addUserAsPlayer(User user, Game game) {
         // Check if user is already in the game
         for (Player player : game.getPlayers()) {
             if (player.getUserId().equals(user.getId())) {
-                throw new ResponseStatusException(HttpStatus.CONFLICT, "User is already in the game");
+                // User is already in the game, no need to add them again
+                return false;
             }
         }
         
@@ -163,9 +179,11 @@ public class GameService {
         Player newPlayer = new Player(user.getId(), hand, game);
         game.addPlayer(newPlayer);
         
-        // Save the updated game
-        gameRepository.save(game);
-        gameRepository.flush();
+        // Save just the player
+        playerRepository.save(newPlayer);
+        playerRepository.flush();
+        
+        return true;
     }
 
     
@@ -323,7 +341,7 @@ public class GameService {
     /**
      * Process a player action (check, call, bet, raise, fold)
      */
-    public Game processPlayerAction(Long gameId, Long playerId, PlayerAction action, Long amount) {
+    public Game processPlayerAction(Long gameId, Long userId, PlayerAction action, Long amount) {
         Game game = gameRepository.findByid(gameId);
         if (game == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found");
@@ -334,7 +352,7 @@ public class GameService {
         int playerIndex = -1;
         for (int i = 0; i < game.getPlayers().size(); i++) {
             Player p = game.getPlayers().get(i);
-            if (p.getId().equals(playerId)) {
+            if (p.getUserId().equals(userId)) {
                 player = p;
                 playerIndex = i;
                 break;

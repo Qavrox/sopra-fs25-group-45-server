@@ -70,8 +70,7 @@ public class GameActionController {
 
         boolean isUserPlayer = false;
         for (Player player : game.getPlayers()) {
-            if (player.getId().equals(playerActionDTO.getPlayerId()) && 
-                player.getUserId().equals(user.getId())) {
+            if (player.getUserId().equals(playerActionDTO.getUserId())) {
                 isUserPlayer = true;
                 break;
             }
@@ -83,7 +82,7 @@ public class GameActionController {
 
         Game result = gameService.processPlayerAction(
                 gameId,
-                playerActionDTO.getPlayerId(),
+                playerActionDTO.getUserId(),
                 playerActionDTO.getAction(),
                 playerActionDTO.getAmount());
         
