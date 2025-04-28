@@ -545,9 +545,6 @@ public class GameService {
             case RIVER:
                 // Move to showdown
                 game.setGameStatus(GameStatus.SHOWDOWN);
-                // Determine winner and award pot
-                gameRepository.save(game);
-                gameRepository.flush();
                 
                 // Determine winner and award pot
                 determineWinnerAndAwardPot(game);
@@ -562,6 +559,9 @@ public class GameService {
         if (game.getGameStatus() != GameStatus.GAMEOVER) {
             game.resetPlayerActions();
         }
+
+        gameRepository.save(game);
+        gameRepository.flush();
     }
     
     /**
