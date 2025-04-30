@@ -401,6 +401,15 @@ public class GameService {
                 break;
                 
             case CALL:
+                if (highestBet == null || player.getCurrentBet() == null) {
+                    throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Null betting values");
+                }
+                if (highestBet < 0 || player.getCurrentBet() < 0) {
+                    throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Negative betting values");
+                }
+                if (player.getCurrentBet() >= highestBet) {
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid call: already matched or ahead");
+                }
                 Long callAmount = highestBet - player.getCurrentBet();
                 if (callAmount > player.getCredit()) {
                     callAmount = player.getCredit(); // All-in
