@@ -21,7 +21,7 @@ public class GameGetDTO {
   private int callAmount;
   private int smallBlindIndex;
   private int numberOfPlayers;
-  private List<Integer> communityCards;
+  private List<String> communityCards;
   private List<Player> players;
   private Long currentPlayerId;
 
@@ -113,10 +113,16 @@ public class GameGetDTO {
     this.numberOfPlayers = numberOfPlayers;
   }
 
-  public List<Integer> getCommunityCards() {
+  // public List<Integer> getCommunityCards() { // 旧代码
+  //   return communityCards;
+  // }
+  // public void setCommunityCards(List<Integer> communityCards) { // 旧代码
+  //   this.communityCards = communityCards;
+  // }
+  public List<String> getCommunityCards() { // 修改后的代码
     return communityCards;
   }
-  public void setCommunityCards(List<Integer> communityCards) {
+  public void setCommunityCards(List<String> communityCards) { // 修改后的代码
     this.communityCards = communityCards;
   }
   public List<Player> getPlayers() {

@@ -114,8 +114,6 @@ public class Game implements Serializable {
         this.players=players;
     }
 
-
-
     public void addPlayer(Player player){
         this.players.add(player);
         this.numberOfPlayers = this.players.size();
@@ -127,7 +125,6 @@ public class Game implements Serializable {
 
     public void rotateBlinds(){
         this.smallBlindIndex=(this.smallBlindIndex + 1)%(this.numberOfPlayers);
-
     }
 
     public void setStartBlinds(){
