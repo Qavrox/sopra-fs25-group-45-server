@@ -21,7 +21,7 @@ public class GameGetDTO {
   private int callAmount;
   private int smallBlindIndex;
   private int numberOfPlayers;
-  private List<Integer> communityCards;
+  private List<String> communityCards;
   private List<Player> players;
   private Long currentPlayerId;
 
@@ -109,19 +109,23 @@ public class GameGetDTO {
   public int getNumberOfPlayers() {
     return numberOfPlayers;
   }
+
   public void setNumberOfPlayers(int numberOfPlayers) {
     this.numberOfPlayers = numberOfPlayers;
   }
 
-  public List<Integer> getCommunityCards() {
+  public List<String> getCommunityCards() { 
     return communityCards;
   }
-  public void setCommunityCards(List<Integer> communityCards) {
+  
+  public void setCommunityCards(List<String> communityCards) {
     this.communityCards = communityCards;
   }
+
   public List<Player> getPlayers() {
     return players;
   }
+
   public void setPlayers(List<Player> players) {
     this.players = players;
   }
