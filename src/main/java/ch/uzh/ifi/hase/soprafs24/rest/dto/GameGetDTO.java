@@ -109,25 +109,23 @@ public class GameGetDTO {
   public int getNumberOfPlayers() {
     return numberOfPlayers;
   }
+
   public void setNumberOfPlayers(int numberOfPlayers) {
     this.numberOfPlayers = numberOfPlayers;
   }
 
-  // public List<Integer> getCommunityCards() { // 旧代码
-  //   return communityCards;
-  // }
-  // public void setCommunityCards(List<Integer> communityCards) { // 旧代码
-  //   this.communityCards = communityCards;
-  // }
-  public List<String> getCommunityCards() { // 修改后的代码
+  public List<String> getCommunityCards() { 
     return communityCards;
   }
-  public void setCommunityCards(List<String> communityCards) { // 修改后的代码
+  
+  public void setCommunityCards(List<String> communityCards) {
     this.communityCards = communityCards;
   }
+
   public List<Player> getPlayers() {
     return players;
   }
+
   public void setPlayers(List<Player> players) {
     this.players = players;
   }
