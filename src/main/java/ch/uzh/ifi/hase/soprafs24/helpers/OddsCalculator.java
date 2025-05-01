@@ -9,6 +9,7 @@ import java.util.*;
  * Provides a reasonably simple approximation for the Odds of winning using Monte Carlo simulation
  */
 public class OddsCalculator {
+    
     // Represents the evaluated hand.
     // Categories: 8 = straight flush, 7 = four of a kind, 6 = full house, 
     // 5 = flush, 4 = straight, 3 = three of a kind, 2 = two pair, 
@@ -249,7 +250,8 @@ public class OddsCalculator {
         List<Card> deck = Deck.createDeckExcluding(known);
         
         int missingBoard = 5 - board.size();
-        Random rng = new Random();
+        // Don't sonar since this is a static method and not an instance method
+        Random rng = new Random(); // NOSONAR
         double totalWeight = 0.0;
         
         for (int iter = 0; iter < iterations; iter++) {

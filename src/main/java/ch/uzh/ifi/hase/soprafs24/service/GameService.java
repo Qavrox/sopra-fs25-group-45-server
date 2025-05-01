@@ -215,7 +215,7 @@ public class GameService {
             List<Player> players = game.getPlayers();
         
             for (Player player : players) {
-                if (player.getUserId() == user.getId()) {
+                if (player.getUserId().equals(user.getId())) {
                     return game;
                 }
             }
@@ -238,7 +238,7 @@ public class GameService {
         User gameCreator = userRepository.findByid(gameCreatorId);
 
         User user = userRepository.findByToken(token);
-        if(gameCreator.getToken()!=user.getToken()){
+        if(!gameCreator.getToken().equals(user.getToken())){
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You are not the creator of the game. You cannot start the game.");
         }
 
