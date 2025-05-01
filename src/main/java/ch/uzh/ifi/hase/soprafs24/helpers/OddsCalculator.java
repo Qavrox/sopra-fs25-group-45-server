@@ -35,6 +35,49 @@ public class OddsCalculator {
             }
             return 0;
         }
+        
+        @Override
+        public String toString() {
+            StringBuilder sb = new StringBuilder();
+            
+            // Convert numeric ranks to card names
+            String[] rankNames = {"2", "3", "4", "5", "6", "7", "8", "9", "10", "Jack", "Queen", "King", "Ace"};
+            
+            switch(category) {
+                case 8: // Straight flush
+                    sb.append("Straight Flush, ").append(rankNames[kickers.get(0) - 2]).append(" high");
+                    break;
+                case 7: // Four of a kind
+                    sb.append("Four of a Kind, ").append(rankNames[kickers.get(0) - 2]).append("s");
+                    break;
+                case 6: // Full house
+                    sb.append("Full House, ").append(rankNames[kickers.get(0) - 2]).append("s full of ").append(rankNames[kickers.get(1) - 2]).append("s");
+                    break;
+                case 5: // Flush
+                    sb.append("Flush, ").append(rankNames[kickers.get(0) - 2]).append(" high");
+                    break;
+                case 4: // Straight
+                    sb.append("Straight, ").append(rankNames[kickers.get(0) - 2]).append(" high");
+                    break;
+                case 3: // Three of a kind
+                    sb.append("Three of a Kind, ").append(rankNames[kickers.get(0) - 2]).append("s");
+                    break;
+                case 2: // Two pair
+                    sb.append("Two Pair, ").append(rankNames[kickers.get(0) - 2]).append("s and ").append(rankNames[kickers.get(1) - 2]).append("s");
+                    break;
+                case 1: // One pair
+                    sb.append("Pair of ").append(rankNames[kickers.get(0) - 2]).append("s");
+                    break;
+                case 0: // High card
+                    sb.append("High Card: ").append(rankNames[kickers.get(0) - 2]);
+                    break;
+                default:
+                    sb.append("Unknown Hand");
+                    break;
+            }
+            
+            return sb.toString();
+        }
     }
     
     // Evaluates a 7-card hand (player's 2 cards + 5 board cards).
