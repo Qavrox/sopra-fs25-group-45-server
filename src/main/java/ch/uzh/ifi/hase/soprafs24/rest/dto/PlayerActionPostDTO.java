@@ -3,16 +3,16 @@ package ch.uzh.ifi.hase.soprafs24.rest.dto;
 import ch.uzh.ifi.hase.soprafs24.constant.PlayerAction;
 
 public class PlayerActionPostDTO {
-    private Long playerId;
+    private Long userId;
     private PlayerAction action;
     private Long amount;
     
-    public Long getPlayerId() {
-        return playerId;
+    public Long getUserId() {
+        return userId;
     }
     
-    public void setPlayerId(Long playerId) {
-        this.playerId = playerId;
+    public void setUserId(Long userId) {
+        this.userId = userId;
     }
     
     public PlayerAction getAction() {

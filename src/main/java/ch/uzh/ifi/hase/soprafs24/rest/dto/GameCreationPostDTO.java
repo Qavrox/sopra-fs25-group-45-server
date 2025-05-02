@@ -10,8 +10,6 @@ public class GameCreationPostDTO {
     private int smallBlind;
     private int bigBlind;
 
-
-    
     public Long getCreatorId() {
         return creatorId;
     }

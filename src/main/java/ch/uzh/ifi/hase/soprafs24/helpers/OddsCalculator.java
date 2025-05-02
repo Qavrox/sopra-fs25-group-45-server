@@ -9,6 +9,7 @@ import java.util.*;
  * Provides a reasonably simple approximation for the Odds of winning using Monte Carlo simulation
  */
 public class OddsCalculator {
+    
     // Represents the evaluated hand.
     // Categories: 8 = straight flush, 7 = four of a kind, 6 = full house, 
     // 5 = flush, 4 = straight, 3 = three of a kind, 2 = two pair, 
@@ -33,6 +34,49 @@ public class OddsCalculator {
                     return cmp;
             }
             return 0;
+        }
+        
+        @Override
+        public String toString() {
+            StringBuilder sb = new StringBuilder();
+            
+            // Convert numeric ranks to card names
+            String[] rankNames = {"2", "3", "4", "5", "6", "7", "8", "9", "10", "Jack", "Queen", "King", "Ace"};
+            
+            switch(category) {
+                case 8: // Straight flush
+                    sb.append("Straight Flush, ").append(rankNames[kickers.get(0) - 2]).append(" high");
+                    break;
+                case 7: // Four of a kind
+                    sb.append("Four of a Kind, ").append(rankNames[kickers.get(0) - 2]).append("s");
+                    break;
+                case 6: // Full house
+                    sb.append("Full House, ").append(rankNames[kickers.get(0) - 2]).append("s full of ").append(rankNames[kickers.get(1) - 2]).append("s");
+                    break;
+                case 5: // Flush
+                    sb.append("Flush, ").append(rankNames[kickers.get(0) - 2]).append(" high");
+                    break;
+                case 4: // Straight
+                    sb.append("Straight, ").append(rankNames[kickers.get(0) - 2]).append(" high");
+                    break;
+                case 3: // Three of a kind
+                    sb.append("Three of a Kind, ").append(rankNames[kickers.get(0) - 2]).append("s");
+                    break;
+                case 2: // Two pair
+                    sb.append("Two Pair, ").append(rankNames[kickers.get(0) - 2]).append("s and ").append(rankNames[kickers.get(1) - 2]).append("s");
+                    break;
+                case 1: // One pair
+                    sb.append("Pair of ").append(rankNames[kickers.get(0) - 2]).append("s");
+                    break;
+                case 0: // High card
+                    sb.append("High Card: ").append(rankNames[kickers.get(0) - 2]);
+                    break;
+                default:
+                    sb.append("Unknown Hand");
+                    break;
+            }
+            
+            return sb.toString();
         }
     }
     
@@ -249,7 +293,8 @@ public class OddsCalculator {
         List<Card> deck = Deck.createDeckExcluding(known);
         
         int missingBoard = 5 - board.size();
-        Random rng = new Random();
+        // Don't sonar since this is a static method and not an instance method
+        Random rng = new Random(); // NOSONAR
         double totalWeight = 0.0;
         
         for (int iter = 0; iter < iterations; iter++) {

@@ -66,7 +66,10 @@ public class Game implements Serializable {
 
 
     @Column(nullable = false)
-    private int maximalPlayers;    
+    private int maximalPlayers;  
+    
+    @Column(nullable = true)
+    private Long currentPlayerId;
 
     @Column(nullable = false)
     private Long startCredit; 
@@ -76,7 +79,9 @@ public class Game implements Serializable {
     
     @Column(nullable = true)
     private int lastRaisePlayerIndex;   
-      
+
+    @Column(nullable = true)
+    private long userTurnId;
 
     public String getPassword(){
         return password;
@@ -109,8 +114,6 @@ public class Game implements Serializable {
         this.players=players;
     }
 
-
-
     public void addPlayer(Player player){
         this.players.add(player);
         this.numberOfPlayers = this.players.size();
@@ -122,7 +125,6 @@ public class Game implements Serializable {
 
     public void rotateBlinds(){
         this.smallBlindIndex=(this.smallBlindIndex + 1)%(this.numberOfPlayers);
-
     }
 
     public void setStartBlinds(){
@@ -299,6 +301,7 @@ public class Game implements Serializable {
     public void moveToNextPlayer() {
         do {
             currentPlayerIndex = (currentPlayerIndex + 1) % players.size();
+            setCurrentPlayerId(players.get(currentPlayerIndex).getUserId());
         } while (players.get(currentPlayerIndex).getHasFolded());
     }
     
@@ -334,6 +337,20 @@ public class Game implements Serializable {
         boolean allActed = true;
         Long currentBet = null;
         
+        // First, find the first active player's bet to use as a reference
+        for (Player player : players) {
+            if (!player.getHasFolded()) {
+                currentBet = player.getCurrentBet();
+                break;
+            }
+        }
+        
+        // If no active players (shouldn't happen), return true
+        if (currentBet == null) {
+            return true;
+        }
+        
+        // Now check that all active players have acted and their bets match
         for (Player player : players) {
             if (!player.getHasFolded()) {
                 if (!player.getHasActed()) {
@@ -341,9 +358,7 @@ public class Game implements Serializable {
                     break;
                 }
                 
-                if (currentBet == null) {
-                    currentBet = player.getCurrentBet();
-                } else if (!currentBet.equals(player.getCurrentBet())) {
+                if (!currentBet.equals(player.getCurrentBet())) {
                     return false;
                 }
             }
@@ -384,5 +399,21 @@ public class Game implements Serializable {
     }
     public GameStatus getStatus() {
         return gameStatus;
+    }
+
+    public Long getcurrentPlayerId() {
+        // Check if players list is not empty and index is valid
+        if (players != null && !players.isEmpty() && currentPlayerIndex >= 0 && currentPlayerIndex < players.size()) {
+            Player currentPlayer = players.get(currentPlayerIndex);
+            if (currentPlayer != null) {
+                return currentPlayer.getUserId(); // Return the user ID of the current player
+            }
+        }
+        // Return null or throw an exception if the current player cannot be determined
+        return null; 
+    }
+
+    public void setCurrentPlayerId(Long currentPlayerId) {
+        this.currentPlayerId = currentPlayerId;
     }
 }

@@ -24,14 +24,20 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.never;
 
 public class GameServiceTest {
 
@@ -65,7 +71,8 @@ public class GameServiceTest {
         MockitoAnnotations.openMocks(this);
 
         // Set up user
-        user= new User();
+        user = new User();
+        user.setId(1L);
         user.setName("Firstname Lastname");
         user.setUsername("firstname@lastname");
         user.setStatus(UserStatus.OFFLINE);
@@ -221,69 +228,192 @@ public class GameServiceTest {
 
     @Test 
     void testCreateNewGameValidToken(){
-        // when
-        gameService.createNewGame(game, user.getToken());
+        // Setup
+        Game newGame = new Game();
+        newGame.setCreatorId(user.getId());
+        newGame.setIsPublic(true);
+        newGame.setMaximalPlayers(5);
+        newGame.setStartCredit(1000L);
+        newGame.setSmallBlind(5);
+        newGame.setBigBlind(10);
+        newGame.setSmallBlindIndex(0);
+        newGame.setPot(0L);
+        newGame.setCallAmount(0L);
+        newGame.setGameStatus(GameStatus.READY);
+        newGame.setCardDeck(new ArrayList<>());
+        newGame.setCommunityCards(new ArrayList<>());
+        newGame.setPlayers(new ArrayList<>());
 
-        // then
-        Game persistedGame = gameRepository.findByid(game.getId());
-        assertNotNull(persistedGame);
-        assert(Objects.equals(game, persistedGame));
+        // Mock repository behavior
+        when(gameRepository.save(any(Game.class))).thenReturn(newGame);
+        when(userRepository.findByToken(user.getToken())).thenReturn(user);
 
+        // Execute
+        Game createdGame = gameService.createNewGame(newGame, user.getToken());
+
+        // Verify
+        assertNotNull(createdGame, "Created game should not be null");
+        // Creator is no longer automatically added as a player
+        assertEquals(0, createdGame.getPlayers().size(), "Game should not have any players yet");
+
+        // Verify repository interactions
+        verify(gameRepository, times(1)).save(any(Game.class));
+        verify(gameRepository, times(1)).flush();
     }
 
     @Test 
     void testCreateNewGameInvalidToken(){
-        // when
-        assertThrows(ResponseStatusException.class, () -> {
-            gameService.createNewGame(game, "invalid token");
-        });
+        // Setup
+        Game newGame = new Game();
+        newGame.setCreatorId(user.getId());
+        newGame.setIsPublic(true);
+        newGame.setMaximalPlayers(5);
+        newGame.setStartCredit(1000L);
 
+        // Mock authenticator to throw exception
+        Mockito.doThrow(new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid token"))
+               .when(authenticator).checkTokenValidity("invalid token");
+
+        // Execute and verify
+        assertThrows(ResponseStatusException.class, () -> {
+            gameService.createNewGame(newGame, "invalid token");
+        }, "Should throw exception for invalid token");
+
+        // Verify repository interactions
+        verify(gameRepository, never()).save(any(Game.class));
+        verify(gameRepository, never()).flush();
     }
 
     @Test
     void testCreateGameInvalidMaximalPlayers() {
-        // when
+        // Setup
         Game gameWithTooFewPlayers = new Game();
+        gameWithTooFewPlayers.setCreatorId(user.getId());
         gameWithTooFewPlayers.setMaximalPlayers(0); // Invalid number of players
 
         Game gameWithTooManyPlayers = new Game();
+        gameWithTooManyPlayers.setCreatorId(user.getId());
         gameWithTooManyPlayers.setMaximalPlayers(11); // Invalid number of players
 
+        // Mock user repository
+        when(userRepository.findByToken(user.getToken())).thenReturn(user);
 
+        // Execute and verify
         assertThrows(ResponseStatusException.class, () -> {
             gameService.createNewGame(gameWithTooFewPlayers, user.getToken());
-        });
+        }, "Should throw exception for too few players");
 
         assertThrows(ResponseStatusException.class, () -> {
             gameService.createNewGame(gameWithTooManyPlayers, user.getToken());
-        });
+        }, "Should throw exception for too many players");
+
+        // Verify repository interactions
+        verify(gameRepository, never()).save(any(Game.class));
+        verify(gameRepository, never()).flush();
     }
 
     @Test
     void testCreateGameInvalidStartCredit() {
-        // when
+        // Setup
         Game gameWithNegativeStartCredit = new Game();
+        gameWithNegativeStartCredit.setCreatorId(user.getId());
         gameWithNegativeStartCredit.setStartCredit(-100L); // Invalid start credit
 
         Game gameWithZeroStartCredit = new Game();
+        gameWithZeroStartCredit.setCreatorId(user.getId());
         gameWithZeroStartCredit.setStartCredit(0L); // Invalid start credit
 
+        // Mock user repository
+        when(userRepository.findByToken(user.getToken())).thenReturn(user);
+
+        // Execute and verify
         assertThrows(ResponseStatusException.class, () -> {
             gameService.createNewGame(gameWithNegativeStartCredit, user.getToken());
-        });
+        }, "Should throw exception for negative start credit");
 
         assertThrows(ResponseStatusException.class, () -> {
             gameService.createNewGame(gameWithZeroStartCredit, user.getToken());
-        });
+        }, "Should throw exception for zero start credit");
+
+        // Verify repository interactions
+        verify(gameRepository, never()).save(any(Game.class));
+        verify(gameRepository, never()).flush();
     }
+
+    @Test
+    void testCreateNewGameCreatorNotFound() {
+        // Setup
+        Game newGame = new Game();
+        newGame.setCreatorId(user.getId());
+        newGame.setIsPublic(true);
+        newGame.setMaximalPlayers(5);
+        newGame.setStartCredit(1000L);
+
+        // Mock repository to return null for creator
+        when(userRepository.findByToken(user.getToken())).thenReturn(null);
+
+        // Execute and verify
+        assertThrows(ResponseStatusException.class, () -> {
+            gameService.createNewGame(newGame, user.getToken());
+        }, "Should throw exception when creator not found");
+
+        // Verify repository interactions
+        verify(gameRepository, never()).save(any(Game.class));
+        verify(gameRepository, never()).flush();
+    }
+
+    @Test
+    void testCreateNewGameTokenMismatch() {
+        // Setup
+        Game newGame = new Game();
+        newGame.setCreatorId(999L); // Different from user.getId()
+        newGame.setIsPublic(true);
+        newGame.setMaximalPlayers(5);
+        newGame.setStartCredit(1000L);
+
+        // Mock repository behavior
+        when(userRepository.findByToken(user.getToken())).thenReturn(user);
+
+        // Execute and verify
+        assertThrows(ResponseStatusException.class, () -> {
+            gameService.createNewGame(newGame, user.getToken());
+        }, "Should throw exception when token doesn't match creator ID");
+
+        // Verify repository interactions
+        verify(gameRepository, never()).save(any(Game.class));
+        verify(gameRepository, never()).flush();
+    }
+
 
     @Test 
     void testJoinGameValidToken(){
-        // when
-        Game jointGame = gameService.joinGame(game.getId(), user.getToken(), game.getPassword());
-
-        assert(Objects.equals(game, jointGame));
-
+        // Create a fresh game for this test
+        Game freshGame = new Game();
+        freshGame.setId(1L);
+        freshGame.setCreatorId(2L); // Different from user.getId()
+        freshGame.setIsPublic(true);
+        freshGame.setMaximalPlayers(5);
+        freshGame.setStartCredit(1000L);
+        freshGame.setSmallBlind(5);
+        freshGame.setBigBlind(10);
+        freshGame.setGameStatus(GameStatus.READY);
+        freshGame.setPlayers(new ArrayList<>()); // Empty player list
+        
+        // Mock the repositories
+        when(gameRepository.findByid(1L)).thenReturn(freshGame);
+        when(userRepository.findByToken(user.getToken())).thenReturn(user);
+        when(gameRepository.save(any(Game.class))).thenReturn(freshGame);
+        
+        // Execute
+        gameService.joinGame(1L, user.getToken(), null);
+        
+        // Verify
+        verify(gameRepository, times(1)).save(any(Game.class));
+        verify(gameRepository, times(1)).flush();
+        
+        // Verify that a player was added to the game
+        assertEquals(1, freshGame.getPlayers().size(), "Game should have one player added");
+        assertEquals(user.getId(), freshGame.getPlayers().get(0).getUserId(), "The player should have the user's ID");
     }
 
     @Test 
@@ -482,4 +612,350 @@ public class GameServiceTest {
 
 
 
+    @Test
+    void testCreatorJoiningOwnGame() {
+        // Setup game for this specific test
+        Game testGame = new Game();
+        testGame.setId(1L);
+        testGame.setCreatorId(user.getId());
+        testGame.setIsPublic(true);
+        testGame.setMaximalPlayers(5);
+        testGame.setStartCredit(1000L);
+        testGame.setSmallBlind(5);
+        testGame.setBigBlind(10);
+        testGame.setSmallBlindIndex(0);
+        testGame.setPot(0L);
+        testGame.setCallAmount(0L);
+        testGame.setGameStatus(GameStatus.READY);
+        testGame.setCardDeck(new ArrayList<>());
+        testGame.setCommunityCards(new ArrayList<>());
+        testGame.setPlayers(new ArrayList<>());
+        
+        // Mock the repository to return the same game instance
+        when(gameRepository.save(any(Game.class))).thenReturn(testGame);
+        when(gameRepository.findByid(1L)).thenReturn(testGame);
+        
+        // First create the game (creator is not automatically added now)
+        Game createdGame = gameService.createNewGame(testGame, user.getToken());
+        assertNotNull(createdGame, "Created game should not be null");
+        assertEquals(0, createdGame.getPlayers().size(), "Game should have no players yet");
+        
+        // Then have the creator join the game
+        gameService.joinGame(1L, user.getToken(), null);
+        
+        // Verify that there is now one player with the creator's userId
+        List<Player> players = testGame.getPlayers();
+        assertEquals(1, players.size(), "There should be exactly one player");
+        
+        Player firstPlayer = players.get(0);
+        assertNotNull(firstPlayer, "First player should not be null");
+        assertEquals(user.getId(), firstPlayer.getUserId(), "The player should have the creator's userId");
+        
+        // Verify repository interactions
+        verify(gameRepository, atLeastOnce()).save(any(Game.class));
+        verify(gameRepository, atLeastOnce()).findByid(1L);
+    }
+
+    @Test
+    void testCreateNewGameWithCreatorAsPlayer() {
+        // Create a new game
+        Game newGame = new Game();
+        newGame.setId(7L);
+        newGame.setCreatorId(user.getId());
+        newGame.setIsPublic(true);
+        newGame.setMaximalPlayers(5);
+        newGame.setStartCredit(1000L);
+        newGame.setSmallBlind(5);
+        newGame.setBigBlind(10);
+        newGame.setPlayers(new ArrayList<>());
+        
+        // Mock repository behavior
+        when(userRepository.findByToken(user.getToken())).thenReturn(user);
+        when(gameRepository.save(any(Game.class))).thenReturn(newGame);
+        
+        // Create the game
+        Game createdGame = gameService.createNewGame(newGame, user.getToken());
+        
+        // Verify that the creator is NOT added as a player
+        assertEquals(0, createdGame.getPlayers().size(), "Game should not have any players yet");
+        
+        // Now manually join the creator to the game
+        when(gameRepository.findByid(7L)).thenReturn(createdGame);
+        gameService.joinGame(7L, user.getToken(), null);
+        
+        // Verify creator has now joined as a player
+        assertEquals(1, createdGame.getPlayers().size(), "Game should have one player after joining");
+        assertEquals(user.getId(), createdGame.getPlayers().get(0).getUserId(), "The player should be the creator");
+    }
+
+    @Test
+    void testCreateGameValidParametersSuccess() {
+        // Setup
+        Game validGame = new Game();
+        validGame.setCreatorId(user.getId());
+        validGame.setIsPublic(true);
+        validGame.setMaximalPlayers(5);
+        validGame.setStartCredit(1000L);
+        validGame.setSmallBlind(5);
+        validGame.setBigBlind(10);
+        validGame.setPlayers(new ArrayList<>());
+        
+        // Mock repository to return the saved game
+        when(userRepository.findByToken(user.getToken())).thenReturn(user);
+        when(gameRepository.save(any(Game.class))).thenReturn(validGame);
+        
+        // Execute
+        Game createdGame = gameService.createNewGame(validGame, user.getToken());
+        
+        // Verify
+        assertNotNull(createdGame);
+        assertEquals(GameStatus.READY, createdGame.getGameStatus());
+        assertEquals(0L, createdGame.getPot());
+        assertEquals(0L, createdGame.getCallAmount());
+        assertEquals(0, createdGame.getPlayers().size(), "Game should not have any players yet");
+        verify(gameRepository).save(any(Game.class));
+        verify(gameRepository).flush();
+    }
+    
+    @Test
+    void testCreateGamePrivateWithPassword() {
+        // Setup
+        Game privateGame = new Game();
+        privateGame.setCreatorId(user.getId());
+        privateGame.setIsPublic(false);
+        privateGame.setMaximalPlayers(5);
+        privateGame.setStartCredit(1000L);
+        privateGame.setPassword("secret123");
+        privateGame.setSmallBlind(5);
+        privateGame.setBigBlind(10);
+        
+        // Mock repository to return the saved game
+        when(userRepository.findByToken(user.getToken())).thenReturn(user);
+        when(gameRepository.save(any(Game.class))).thenReturn(privateGame);
+        
+        // Execute
+        Game createdGame = gameService.createNewGame(privateGame, user.getToken());
+        
+        // Verify
+        assertNotNull(createdGame);
+        assertEquals("secret123", createdGame.getPassword());
+        assertFalse(createdGame.getIsPublic());
+    }
+    
+    @Test
+    void testCreateGamePrivateWithoutPassword() {
+        // Setup
+        Game invalidPrivateGame = new Game();
+        invalidPrivateGame.setCreatorId(user.getId());
+        invalidPrivateGame.setIsPublic(false);
+        invalidPrivateGame.setMaximalPlayers(5);
+        invalidPrivateGame.setStartCredit(1000L);
+        invalidPrivateGame.setPassword(null); // Missing password for private game
+        invalidPrivateGame.setSmallBlind(5);
+        invalidPrivateGame.setBigBlind(10);
+        
+        // Mock repository behavior
+        when(userRepository.findByToken(user.getToken())).thenReturn(user);
+        
+        // Execute and verify
+        Exception exception = assertThrows(ResponseStatusException.class, () -> {
+            gameService.createNewGame(invalidPrivateGame, user.getToken());
+        });
+        
+        assertTrue(exception.getMessage().contains("Private games must have a password"));
+        verify(gameRepository, never()).save(any(Game.class));
+    }
+    
+    @Test
+    void testCreateGamePublicWithPassword() {
+        // Setup
+        Game publicGameWithPassword = new Game();
+        publicGameWithPassword.setCreatorId(user.getId());
+        publicGameWithPassword.setIsPublic(true);
+        publicGameWithPassword.setMaximalPlayers(5);
+        publicGameWithPassword.setStartCredit(1000L);
+        publicGameWithPassword.setPassword("unnecessary-password"); // Password should be removed
+        publicGameWithPassword.setSmallBlind(5);
+        publicGameWithPassword.setBigBlind(10);
+        
+        // Mock repository to return the saved game
+        when(userRepository.findByToken(user.getToken())).thenReturn(user);
+        when(gameRepository.save(any(Game.class))).thenReturn(publicGameWithPassword);
+        
+        // Execute
+        Game createdGame = gameService.createNewGame(publicGameWithPassword, user.getToken());
+        
+        // Verify password was removed for public game
+        assertNull(createdGame.getPassword());
+        assertTrue(createdGame.getIsPublic());
+    }
+    
+    @Test
+    void testCreateGameInvalidBlinds() {
+        // Setup - Small blind greater than big blind
+        Game gameWithInvalidBlinds = new Game();
+        gameWithInvalidBlinds.setCreatorId(user.getId());
+        gameWithInvalidBlinds.setIsPublic(true);
+        gameWithInvalidBlinds.setMaximalPlayers(5);
+        gameWithInvalidBlinds.setStartCredit(1000L);
+        gameWithInvalidBlinds.setSmallBlind(20); // Invalid - should be less than big blind
+        gameWithInvalidBlinds.setBigBlind(10);
+        
+        // Setup - Negative blinds
+        Game gameWithNegativeBlinds = new Game();
+        gameWithNegativeBlinds.setCreatorId(user.getId());
+        gameWithNegativeBlinds.setIsPublic(true);
+        gameWithNegativeBlinds.setMaximalPlayers(5);
+        gameWithNegativeBlinds.setStartCredit(1000L);
+        gameWithNegativeBlinds.setSmallBlind(-5); // Invalid
+        gameWithNegativeBlinds.setBigBlind(10);
+        
+        // Setup - Zero blinds
+        Game gameWithZeroBlinds = new Game();
+        gameWithZeroBlinds.setCreatorId(user.getId());
+        gameWithZeroBlinds.setIsPublic(true);
+        gameWithZeroBlinds.setMaximalPlayers(5);
+        gameWithZeroBlinds.setStartCredit(1000L);
+        gameWithZeroBlinds.setSmallBlind(0); // Invalid
+        gameWithZeroBlinds.setBigBlind(0); // Invalid
+        
+        // Mock repository behavior
+        when(userRepository.findByToken(user.getToken())).thenReturn(user);
+        
+        // Execute and verify - Small blind > big blind
+        Exception exception1 = assertThrows(ResponseStatusException.class, () -> {
+            gameService.createNewGame(gameWithInvalidBlinds, user.getToken());
+        });
+        assertTrue(exception1.getMessage().contains("Small blind must be less than big blind"));
+        
+        // Execute and verify - Negative blinds
+        Exception exception2 = assertThrows(ResponseStatusException.class, () -> {
+            gameService.createNewGame(gameWithNegativeBlinds, user.getToken());
+        });
+        assertTrue(exception2.getMessage().contains("Blind values must be greater than 0"));
+        
+        // Execute and verify - Zero blinds
+        Exception exception3 = assertThrows(ResponseStatusException.class, () -> {
+            gameService.createNewGame(gameWithZeroBlinds, user.getToken());
+        });
+        assertTrue(exception3.getMessage().contains("Blind values must be greater than 0"));
+    }
+    
+    @Test
+    void testJoinGameWhenGameAlreadyStarted() {
+        // Setup a game that has already started
+        Game startedGame = new Game();
+        startedGame.setId(5L);
+        startedGame.setCreatorId(1L);
+        startedGame.setIsPublic(true);
+        startedGame.setMaximalPlayers(5);
+        startedGame.setStartCredit(1000L);
+        startedGame.setGameStatus(GameStatus.PREFLOP); // Game has already started
+        
+        when(gameRepository.findByid(5L)).thenReturn(startedGame);
+        when(userRepository.findByToken(user.getToken())).thenReturn(user);
+        
+        // Execute and verify
+        Exception exception = assertThrows(ResponseStatusException.class, () -> {
+            gameService.joinGame(5L, user.getToken(), null);
+        });
+        
+        assertTrue(exception.getMessage().contains("Game has already started"));
+        verify(gameRepository, never()).save(any(Game.class));
+    }
+    
+    @Test
+    void testJoinPrivateGameWithWrongPassword() {
+        // Setup
+        Game privateGame = new Game();
+        privateGame.setId(3L);
+        privateGame.setCreatorId(1L);
+        privateGame.setIsPublic(false);
+        privateGame.setMaximalPlayers(5);
+        privateGame.setStartCredit(1000L);
+        privateGame.setPassword("correct-password");
+        privateGame.setGameStatus(GameStatus.READY);
+        
+        when(gameRepository.findByid(3L)).thenReturn(privateGame);
+        when(userRepository.findByToken(user.getToken())).thenReturn(user);
+        
+        // Test with wrong password
+        Exception exception1 = assertThrows(ResponseStatusException.class, () -> {
+            gameService.joinGame(3L, user.getToken(), "wrong-password");
+        });
+        assertTrue(exception1.getMessage().contains("Wrong password"));
+        
+        // Test with null password
+        Exception exception2 = assertThrows(ResponseStatusException.class, () -> {
+            gameService.joinGame(3L, user.getToken(), null);
+        });
+        assertTrue(exception2.getMessage().contains("Wrong password"));
+        
+        verify(gameRepository, never()).save(any(Game.class));
+    }
+    
+    @Test
+    void testJoinPrivateGameWithCorrectPassword() {
+        // Setup
+        Game privateGame = new Game();
+        privateGame.setId(3L);
+        privateGame.setCreatorId(1L);
+        privateGame.setIsPublic(false);
+        privateGame.setMaximalPlayers(5);
+        privateGame.setStartCredit(1000L);
+        privateGame.setPassword("correct-password");
+        privateGame.setGameStatus(GameStatus.READY);
+        privateGame.setPlayers(new ArrayList<>());
+        
+        when(gameRepository.findByid(3L)).thenReturn(privateGame);
+        when(userRepository.findByToken(user.getToken())).thenReturn(user);
+        when(gameRepository.save(any(Game.class))).thenReturn(privateGame);
+        
+        // Execute
+        gameService.joinGame(3L, user.getToken(), "correct-password");
+        
+        // Verify
+        verify(gameRepository).save(any(Game.class));
+        verify(gameRepository).flush();
+        
+        // Check if user was added as a player
+        boolean userFound = false;
+        for (Player player : privateGame.getPlayers()) {
+            if (player.getUserId().equals(user.getId())) {
+                userFound = true;
+                break;
+            }
+        }
+        assertTrue(userFound, "User should be added as a player");
+    }
+    /*
+    @Test
+    void testJoinFullGame() {
+        // Setup a game that is already full
+        Game fullGame = new Game();
+        fullGame.setId(6L);
+        fullGame.setCreatorId(1L);
+        fullGame.setIsPublic(true);
+        fullGame.setMaximalPlayers(3);
+        fullGame.setStartCredit(1000L);
+        fullGame.setGameStatus(GameStatus.READY);
+        
+        List<Player> players = new ArrayList<>();
+        players.add(new Player(1L, new ArrayList<>(), fullGame));
+        players.add(new Player(2L, new ArrayList<>(), fullGame));
+        players.add(new Player(3L, new ArrayList<>(), fullGame)); // Game is full with 3 players
+        fullGame.setPlayers(players);
+        
+        when(gameRepository.findByid(6L)).thenReturn(fullGame);
+        when(userRepository.findByToken(user.getToken())).thenReturn(user);
+        
+        // Execute and verify
+        Exception exception = assertThrows(ResponseStatusException.class, () -> {
+            gameService.joinGame(6L, user.getToken(), null);
+        });
+        
+        assertTrue(exception.getMessage().contains("Game is full"));
+        verify(gameRepository, never()).save(any(Game.class));
+    }
+         */
 }

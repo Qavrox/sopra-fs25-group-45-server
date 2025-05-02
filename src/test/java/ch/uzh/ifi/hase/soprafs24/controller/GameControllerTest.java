@@ -2,6 +2,7 @@ package ch.uzh.ifi.hase.soprafs24.controller;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.ArrayList;
 
 import org.springframework.http.MediaType;
 import org.junit.jupiter.api.Test;
@@ -18,14 +19,20 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.mockito.ArgumentMatchers.any;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.times;
 
 import ch.uzh.ifi.hase.soprafs24.constant.GameStatus;
 import ch.uzh.ifi.hase.soprafs24.constant.UserStatus;
 import ch.uzh.ifi.hase.soprafs24.entity.Game;
 import ch.uzh.ifi.hase.soprafs24.entity.User;
+import ch.uzh.ifi.hase.soprafs24.entity.Player;
 import ch.uzh.ifi.hase.soprafs24.service.GameService;
 import ch.uzh.ifi.hase.soprafs24.service.UserFriendsService;
 import ch.uzh.ifi.hase.soprafs24.service.UserService;
+import org.mockito.Mockito;
+import org.mockito.ArgumentMatchers;
 
 @WebMvcTest(GameRoomController.class)
 public class GameControllerTest {
@@ -155,9 +162,10 @@ public class GameControllerTest {
     }
         
     @Test
-    public void joinGameTest() throws Exception{
+    public void testJoinGameTwiceNoDuplicatePlayers() throws Exception {
         // given user
-        User user= new User();
+        User user = new User();
+        user.setId(1L);
         user.setName("Firstname Lastname");
         user.setUsername("firstname@lastname");
         user.setStatus(UserStatus.OFFLINE);
@@ -175,9 +183,9 @@ public class GameControllerTest {
         game.setMaximalPlayers(3);
         game.setPot(1L);
         game.setCallAmount(1L);
-        game.setPlayers(Collections.emptyList());
+        game.setPlayers(new ArrayList<>());
         game.setStatus(GameStatus.WAITING);
-        game.setCommunityCards(Collections.emptyList());
+        game.setCommunityCards(new ArrayList<>());
         game.setCreatorId(1L);
 
         // given user
@@ -204,31 +212,61 @@ public class GameControllerTest {
         game.setCommunityCards(Collections.emptyList());
         game.setCreatorId(1L);
 
+        // Create a game with one player for the second getGameById call
+        Game gameWithPlayer = new Game();
+        gameWithPlayer.setId(1L);
+        gameWithPlayer.setIsPublic(true);
+        gameWithPlayer.setSmallBlind(1);
+        gameWithPlayer.setBigBlind(1);
+        gameWithPlayer.setSmallBlindIndex(0);
+        gameWithPlayer.setStartCredit(1L);
+        gameWithPlayer.setMaximalPlayers(3);
+        gameWithPlayer.setPot(1L);
+        gameWithPlayer.setCallAmount(1L);
+        gameWithPlayer.setStatus(GameStatus.WAITING);
+        gameWithPlayer.setCommunityCards(new ArrayList<>());
+        gameWithPlayer.setCreatorId(1L);
+        
+        // Add a player to the game
+        List<Player> players = new ArrayList<>();
+        Player player = new Player(user.getId(), new ArrayList<>(), gameWithPlayer);
+        players.add(player);
+        gameWithPlayer.setPlayers(players);
 
         // when
-        given(gameService.joinGame(game.getId(), user.getToken(), null)).willReturn(game);
-        MockHttpServletRequestBuilder postRequest = post("/games/" + game.getId() + "/join")
+        // First getGameById returns empty game, second returns game with player
+        given(gameService.getGameById(game.getId(), user.getToken()))
+            .willReturn(game)
+            .willReturn(gameWithPlayer);
+        Mockito.doNothing().when(gameService).joinGame(game.getId(), user.getToken(), null);
+
+        // First join
+        MockHttpServletRequestBuilder firstJoinRequest = post("/games/" + game.getId() + "/join")
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", "Bearer " + user.getToken())
+                .content("{\"password\": null}");
+
+        // Second join
+        MockHttpServletRequestBuilder secondJoinRequest = post("/games/" + game.getId() + "/join")
                 .contentType(MediaType.APPLICATION_JSON)
                 .header("Authorization", "Bearer " + user.getToken())
                 .content("{\"password\": null}");
 
         // then
-        mockMvc.perform(postRequest)
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.id").value(game.getId()))
-                .andExpect(jsonPath("$.creatorId").value(game.getCreatorId()))
-                .andExpect(jsonPath("$.isPublic").value(game.getIsPublic()))
-                .andExpect(jsonPath("$.smallBlind").value(game.getSmallBlind()))
-                .andExpect(jsonPath("$.bigBlind").value(game.getBigBlind()))
-                .andExpect(jsonPath("$.smallBlindIndex").value(game.getSmallBlindIndex()))
-                .andExpect(jsonPath("$.startCredit").value(game.getStartCredit()))
-                .andExpect(jsonPath("$.maximalPlayers").value(game.getMaximalPlayers()))
-                .andExpect(jsonPath("$.pot").value(game.getPot()))
-                .andExpect(jsonPath("$.callAmount").value(game.getCallAmount()))
-                .andExpect(jsonPath("$.players").isEmpty())
-                .andExpect(jsonPath("$.gameStatus").value(game.getStatus().toString()))
-                .andExpect(jsonPath("$.communityCards").isEmpty());
+        // First join should succeed
+        mockMvc.perform(firstJoinRequest)
+                .andExpect(status().isOk());
+
+        // Second join should also succeed but not add another player
+        mockMvc.perform(secondJoinRequest)
+                .andExpect(status().isOk());
+
+        // Verify that getGameById was called twice
+        verify(gameService, times(2)).getGameById(game.getId(), user.getToken());
+        // Verify that joinGame was called twice
+        verify(gameService, times(2)).joinGame(game.getId(), user.getToken(), null);
+        // Verify that the game has exactly one player
+        assertEquals(1, gameWithPlayer.getPlayers().size());
     }
     
 }

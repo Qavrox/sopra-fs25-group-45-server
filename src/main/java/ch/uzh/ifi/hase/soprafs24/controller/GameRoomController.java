@@ -1,20 +1,18 @@
-
 package ch.uzh.ifi.hase.soprafs24.controller;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import ch.uzh.ifi.hase.soprafs24.rest.mapper.DTOMapper;
 import ch.uzh.ifi.hase.soprafs24.service.GameService;
 import ch.uzh.ifi.hase.soprafs24.entity.Game;
-import ch.uzh.ifi.hase.soprafs24.repository.UserRepository;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.GameCreationPostDTO;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.GameGetDTO;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.JoinGamePostDTO;
-import ch.uzh.ifi.hase.soprafs24.service.Authenticator;
-import ch.uzh.ifi.hase.soprafs24.repository.GameRepository;
+
 
 @RestController
 public class GameRoomController {
@@ -71,14 +69,14 @@ public class GameRoomController {
     @PostMapping("/games/{gameId}/join")
     @ResponseStatus(HttpStatus.OK)
     @ResponseBody
-    public GameGetDTO joinGame(@PathVariable("gameId") Long id, @RequestBody JoinGamePostDTO gamePostDTO, @RequestHeader("Authorization") String authenticatorToken){
+    public void joinGame(@PathVariable("gameId") Long id, @RequestBody JoinGamePostDTO gamePostDTO, @RequestHeader("Authorization") String authenticatorToken){
         String token = authenticatorToken.substring(7);
 
-        Game game = gameService.joinGame(id, token, gamePostDTO.getPassword());
-        GameGetDTO gameGetDTO = DTOMapper.INSTANCE.convertEntityToGameGetDTO(game);
-        return gameGetDTO;
-
-
+        // Join the game - this will now handle both new joins and rejoins gracefully
+        gameService.joinGame(id, token, gamePostDTO.getPassword());
+        
+        // Get the game after joining (or attempting to join)
+        gameService.getGameById(id, token);
     }    
 
     @DeleteMapping("/games/{gameId}")
