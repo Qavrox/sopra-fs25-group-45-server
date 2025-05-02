@@ -754,4 +754,28 @@ public class GameService {
         return OddsCalculator.calculateWinProbability(playerCards, communityCardObjects, game.getPlayers().size());
     }
 
+    public String getHandDescription(Player player, List<String> communityCards) {
+        // Convert player's hand to Card objects
+        List<Card> playerCards = new ArrayList<>();
+        for (String cardStr : player.getHand()) {
+            playerCards.add(Card.fromShortString(cardStr));
+        }
+
+        // Convert community cards to Card objects
+        List<Card> communityCardObjects = new ArrayList<>();
+        for (String cardStr : communityCards) {
+            communityCardObjects.add(Card.fromShortString(cardStr));
+        }
+
+        // Combine all cards
+        List<Card> allCards = new ArrayList<>(playerCards);
+        allCards.addAll(communityCardObjects);
+
+        // Evaluate the hand
+        OddsCalculator.HandValue handValue = OddsCalculator.evaluateHand(allCards);
+        
+        // Return hand description
+        return handValue.toString();
+    }
+
 }
