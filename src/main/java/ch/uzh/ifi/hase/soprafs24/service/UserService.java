@@ -137,14 +137,14 @@ public class UserService {
       existingUser.setName(updatedUser.getName());
     }
     
-    if (updatedUser.getLevel()!= null) {
+    if (updatedUser.getexperienceLevel()!= null) {
       // Check if new level is valid
-      if (!updatedUser.getLevel().name().equals("Beginner") &&
-          !updatedUser.getLevel().name().equals("Intermediate") &&
-          !updatedUser.getLevel().name().equals("Expert")) {
+      if (!updatedUser.getexperienceLevel().name().equals("Beginner") &&
+          !updatedUser.getexperienceLevel().name().equals("Intermediate") &&
+          !updatedUser.getexperienceLevel().name().equals("Expert")) {
         throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid level");
       }
-      existingUser.setLevel(updatedUser.getLevel());
+      existingUser.setexperienceLevel(updatedUser.getexperienceLevel());
     }
 
     if (updatedUser.getUsername() != null && !updatedUser.getUsername().equals(existingUser.getUsername())) {
@@ -164,7 +164,7 @@ public class UserService {
       existingUser.setBirthday(updatedUser.getBirthday());
     }
     
-    if (updatedUser.getProfileImage() != null) {
+    if (updatedUser.getProfileImage() != 0) {
       existingUser.setProfileImage(updatedUser.getProfileImage());
     }
     

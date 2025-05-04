@@ -49,7 +49,7 @@ public class DTOMapperTest {
     assertEquals(user.getId(), userGetDTO.getId());
     assertEquals(user.getName(), userGetDTO.getName());
     assertEquals(user.getUsername(), userGetDTO.getUsername());
-    assertEquals(user.getStatus(), userGetDTO.getStatus());
+    assertEquals(user.getStatus()==UserStatus.ONLINE, userGetDTO.getOnline());
   }
 
   @Test

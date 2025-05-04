@@ -8,7 +8,7 @@ public class UserProfileDTO {
     private Long id;
     private String username;
     private String displayName;
-    private String avatarUrl;
+    private int avatarUrl;
     private ExperienceLevel experienceLevel;
     
     @JsonFormat(pattern = "yyyy-MM-dd")
@@ -50,11 +50,11 @@ public class UserProfileDTO {
         this.displayName = displayName;
     }
 
-    public String getAvatarUrl() {
+    public int getAvatarUrl() {
         return avatarUrl;
     }
 
-    public void setAvatarUrl(String avatarUrl) {
+    public void setAvatarUrl(int avatarUrl) {
         this.avatarUrl = avatarUrl;
     }
 

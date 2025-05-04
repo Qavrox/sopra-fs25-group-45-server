@@ -3,6 +3,8 @@ package ch.uzh.ifi.hase.soprafs24.rest.dto;
 
 import java.time.LocalDate;
 
+import ch.uzh.ifi.hase.soprafs24.rest.dto.UserProfileDTO.ExperienceLevel;
+
 
 public class UserPostDTO {
 
@@ -10,7 +12,8 @@ public class UserPostDTO {
   private String username;
   private String password;
   private LocalDate birthday;
-  private byte[] profileImage;
+  private int profileImage;
+  private ExperienceLevel experienceLevel;
 
   
 
@@ -46,12 +49,21 @@ public class UserPostDTO {
     this.birthday = birthday;
   }
 
-  public byte[] getProfileImage() {
+  public int getProfileImage() {
     return profileImage;
   }
 
-  public void setProfileImage(byte[] profileImage) {
+  public void setProfileImage(int profileImage) {
     this.profileImage = profileImage;
   }
+
+  public ExperienceLevel getExperienceLevel() {
+    return experienceLevel;
+  }
+
+  public void setExperienceLevel(ExperienceLevel experienceLevel) {
+    this.experienceLevel = experienceLevel;
+  }
+
 
 }
