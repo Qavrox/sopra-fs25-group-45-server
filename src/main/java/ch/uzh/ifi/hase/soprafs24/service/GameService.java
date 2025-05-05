@@ -777,6 +777,7 @@ public class GameService {
         gameRepository.save(game);
         gameRepository.flush();
         return game;
+    }
 
     public String getHandDescription(Player player, List<String> communityCards) {
         // Convert player's hand to Card objects
