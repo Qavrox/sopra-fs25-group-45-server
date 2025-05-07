@@ -1,5 +1,6 @@
 package ch.uzh.ifi.hase.soprafs24.entity;
 import ch.uzh.ifi.hase.soprafs24.constant.UserStatus;
+import javassist.tools.framedump;
 import ch.uzh.ifi.hase.soprafs24.constant.UserLevel;
 import java.util.List;
 import javax.persistence.*;
@@ -53,7 +54,7 @@ public class User implements Serializable {
   }
 
   @Column(nullable = true)
-  private UserLevel level;
+  private UserLevel experienceLevel;
 
   @Column(nullable = false)
   private LocalDate creationDate;
@@ -61,9 +62,8 @@ public class User implements Serializable {
   @Column(nullable = true)
   private LocalDate birthday;
 
-  @Lob
-  @Column
-  private byte[] profileImage;
+  @Column(nullable = false)
+  private int profileImage = 0;
 
   public Long getId() {
     return id;
@@ -101,12 +101,12 @@ public class User implements Serializable {
     return status;
   }
 
-  public void setLevel(UserLevel level) {
-    this.level = level;
+  public void setexperienceLevel(UserLevel experienceLevel) {
+    this.experienceLevel = experienceLevel;
   }
 
-  public UserLevel getLevel() {
-    return level;
+  public UserLevel getexperienceLevel() {
+    return experienceLevel;
   }
 
   public void setStatus(UserStatus status) {
@@ -121,11 +121,11 @@ public class User implements Serializable {
     this.password = password;
   }
 
-  public byte[] getProfileImage() {
+  public int getProfileImage() {
     return profileImage;
   }
 
-  public void setProfileImage(byte[] profileImage) {
+  public void setProfileImage(int profileImage) {
     this.profileImage = profileImage;
   }
 

@@ -8,11 +8,11 @@ public class UserGetDTO {
   private Long id;
   private String name;
   private String username;
-  private UserLevel level;
-  private UserStatus status;
+  private UserLevel experienceLevel;
+  private boolean online;
   private LocalDate creationDate;
   private LocalDate birthday;
-  private byte[] profileImage;
+  private int profileImage;
 
   public Long getId() {
     return id;
@@ -38,20 +38,20 @@ public class UserGetDTO {
     this.username = username;
   }
 
-  public UserStatus getStatus() {
-    return status;
+  public boolean getOnline() {
+    return online;
   }
 
-  public void setStatus(UserStatus status) {
-    this.status = status;
+  public void setOnline(boolean online) {
+    this.online = online;
   }
 
-  public UserLevel getLevel() {
-    return level;
+  public UserLevel getexperienceLevel() {
+    return experienceLevel;
   }
 
-  public void setLevel(UserLevel level) {
-    this.level = level;
+  public void setexperienceLevel(UserLevel experienceLevel) {
+    this.experienceLevel = experienceLevel;
   }
 
   public LocalDate getCreationDate() {
@@ -70,11 +70,11 @@ public class UserGetDTO {
     this.birthday = birthday;
   }
 
-  public byte[] getProfileImage() {
+  public int getProfileImage() {
     return profileImage;
   }
 
-  public void setProfileImage(byte[] profileImage) {
+  public void setProfileImage(int profileImage) {
     this.profileImage = profileImage;
   }
 }

@@ -698,7 +698,7 @@ components:
         displayName:
           type: string
         avatarUrl:
-          type: string
+          type: int
         experienceLevel:
           type: string
           enum: [Beginner, Intermediate, Expert]
@@ -717,7 +717,7 @@ components:
         displayName:
           type: string
         avatarUrl:
-          type: string
+          type: int
         experienceLevel:
           type: string
           enum: [Beginner, Intermediate, Expert]

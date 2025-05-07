@@ -34,16 +34,17 @@ public interface DTOMapper {
     @Mapping(source = "password", target = "password")
     @Mapping(source = "birthday", target = "birthday")
     @Mapping(source = "profileImage", target = "profileImage")
+    @Mapping(source = "experienceLevel", target = "experienceLevel")
     User convertUserPostDTOtoEntity(UserPostDTO userPostDTO);
 
     @Mapping(source = "id", target = "id")
     @Mapping(source = "name", target = "name")
     @Mapping(source = "username", target = "username")
-    @Mapping(source = "status", target = "status")
+    @Mapping(source = "status", target = "online", qualifiedByName = "userStatusToBoolean")
     @Mapping(source = "creationDate", target = "creationDate")
     @Mapping(source = "birthday", target = "birthday")
     @Mapping(source = "profileImage", target = "profileImage")
-    @Mapping(source = "level", target = "level")
+    @Mapping(source = "experienceLevel", target = "experienceLevel")
     UserGetDTO convertEntityToUserGetDTO(User user);
 
     @Mapping(source = "password", target = "password")
@@ -81,7 +82,7 @@ public interface DTOMapper {
 
     @Mapping(source = "id", target = "id")
     @Mapping(source = "username", target = "username")
-    @Mapping(source = "status", target = "online")
+    @Mapping(source = "status", target = "online", qualifiedByName = "userStatusToBoolean")
     @Mapping(source = "creationDate", target = "createdAt")
     UserFriendDTO convertEntityToUserFriendDTO(User user);
 
@@ -90,7 +91,7 @@ public interface DTOMapper {
     @Mapping(source = "password", target = "password")
     @Mapping(source = "birthday", target = "birthday")
     @Mapping(source = "profileImage", target = "profileImage")
-    @Mapping(source = "level", target = "level")
+    @Mapping(source = "experienceLevel", target = "experienceLevel")
     User convertUserPutDTOtoEntity(UserPutDTO userPutDTO);
 
     List<UserGetDTO> convertEntityListToUserGetDTOList(List<User> users);
@@ -98,8 +99,8 @@ public interface DTOMapper {
     @Mapping(source = "id", target = "id")
     @Mapping(source = "username", target = "username")
     @Mapping(source = "name", target = "displayName")
-    @Mapping(source = "profileImage", target = "avatarUrl", qualifiedByName = "byteArrayToString")
-    @Mapping(source = "level", target = "experienceLevel")
+    @Mapping(source = "profileImage", target = "avatarUrl")
+    @Mapping(source = "experienceLevel", target = "experienceLevel")
     @Mapping(source = "birthday", target = "birthday")
     @Mapping(source = "creationDate", target = "createdAt", qualifiedByName = "localDateToLocalDateTime")
     @Mapping(source = "status", target = "online", qualifiedByName = "userStatusToBoolean")

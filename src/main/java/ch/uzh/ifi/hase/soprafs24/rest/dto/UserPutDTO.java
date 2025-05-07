@@ -6,10 +6,10 @@ public class UserPutDTO {
 
   private String name;
   private String username;
-  private UserLevel level;
+  private UserLevel experienceLevel;
   private String password;
   private LocalDate birthday;
-  private byte[] profileImage;
+  private int profileImage;
 
   public String getName() {
     return name;
@@ -27,12 +27,12 @@ public class UserPutDTO {
     this.username = username;
   }
 
-  public UserLevel getLevel() {
-    return level;
+  public UserLevel getexperienceLevel() {
+    return experienceLevel;
   }
 
-  public void setLevel(UserLevel level) {
-    this.level = level;
+  public void setexperienceLevel(UserLevel experienceLevel) {
+    this.experienceLevel = experienceLevel;
   }
 
   public String getPassword() {
@@ -51,11 +51,11 @@ public class UserPutDTO {
     this.birthday = birthday;
   }
 
-  public byte[] getProfileImage() {
+  public int getProfileImage() {
     return profileImage;
   }
 
-  public void setProfileImage(byte[] profileImage) {
+  public void setProfileImage(int profileImage) {
     this.profileImage = profileImage;
   }
 }

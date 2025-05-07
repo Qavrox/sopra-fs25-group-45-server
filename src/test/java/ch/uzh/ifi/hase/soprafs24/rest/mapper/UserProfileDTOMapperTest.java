@@ -19,8 +19,8 @@ class UserProfileDTOMapperTest {
         user.setId(1L);
         user.setUsername("testuser");
         user.setName("Test User");
-        user.setProfileImage("test-image-url".getBytes());
-        user.setLevel(UserLevel.Intermediate);
+        user.setProfileImage(2);
+        user.setexperienceLevel(UserLevel.Intermediate);
         user.setBirthday(LocalDate.of(1990, 1, 1));
         user.setCreationDate(LocalDate.of(2024, 1, 1));
         user.setStatus(UserStatus.ONLINE);
@@ -32,8 +32,8 @@ class UserProfileDTOMapperTest {
         assertEquals(user.getId(), userProfileDTO.getId());
         assertEquals(user.getUsername(), userProfileDTO.getUsername());
         assertEquals(user.getName(), userProfileDTO.getDisplayName());
-        assertEquals(new String(user.getProfileImage()), userProfileDTO.getAvatarUrl());
-        assertEquals(user.getLevel().toString(), userProfileDTO.getExperienceLevel().toString());
+        assertEquals(user.getProfileImage(), userProfileDTO.getAvatarUrl());
+        assertEquals(user.getexperienceLevel().toString(), userProfileDTO.getExperienceLevel().toString());
         assertEquals(user.getBirthday(), userProfileDTO.getBirthday());
         assertEquals(user.getCreationDate().atStartOfDay(), userProfileDTO.getCreatedAt());
         assertTrue(userProfileDTO.isOnline());
@@ -55,7 +55,6 @@ class UserProfileDTOMapperTest {
         assertEquals(user.getId(), userProfileDTO.getId());
         assertEquals(user.getUsername(), userProfileDTO.getUsername());
         assertEquals(user.getName(), userProfileDTO.getDisplayName());
-        assertNull(userProfileDTO.getAvatarUrl());
         assertNull(userProfileDTO.getExperienceLevel());
         assertNull(userProfileDTO.getBirthday());
         assertNull(userProfileDTO.getCreatedAt());

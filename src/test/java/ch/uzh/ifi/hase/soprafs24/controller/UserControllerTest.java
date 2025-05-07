@@ -74,7 +74,7 @@ public class UserControllerTest {
         .andExpect(jsonPath("$", hasSize(1)))
         .andExpect(jsonPath("$[0].name", is(user.getName())))
         .andExpect(jsonPath("$[0].username", is(user.getUsername())))
-        .andExpect(jsonPath("$[0].status", is(user.getStatus().toString())));
+        .andExpect(jsonPath("$[0].online", is((user.getStatus()==UserStatus.ONLINE))));
   }
 
   @Test
