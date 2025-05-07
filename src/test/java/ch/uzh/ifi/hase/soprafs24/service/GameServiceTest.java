@@ -849,6 +849,60 @@ public class GameServiceTest {
         }
         assertTrue(userFound, "User should be added as a player");
     }
+
+    @Test
+    public void testGameDeletionValidToken(){
+        // Delete the game
+        gameService.deleteGame(game.getId(), user.getToken());
+
+        assertEquals(game.getStatus(), GameStatus.ARCHIVED);
+        assertThrows(ResponseStatusException.class, () -> {
+            gameService.getGameById(game.getId(), user.getToken());
+        });
+    }
+
+    @Test
+    public void testGameDeletionInvalidToken(){
+
+        assertThrows(ResponseStatusException.class, () -> {
+            gameService.deleteGame(game.getId(), "invalid token");
+        });
+    } 
+
+    @Test 
+    public void testGameDeletionNotRoomCreator(){
+
+        // Setup a game that is not created by the user
+        Game anotherGame = new Game();
+        anotherGame.setId(2L);
+        anotherGame.setCreatorId(2L); // Different creator
+        anotherGame.setIsPublic(true);
+        anotherGame.setMaximalPlayers(5);
+        anotherGame.setStartCredit(1000L);
+        anotherGame.setSmallBlind(5);
+        anotherGame.setBigBlind(10);
+
+        User user2 = new User();
+        user2.setId(2L);
+        user2.setUsername("user2");
+        user2.setToken("user2-token");
+        user2.setStatus(UserStatus.ONLINE);
+        user2.setCreationDate(java.time.LocalDate.now());
+        user2.setName("User Two");
+        
+        when(gameRepository.findByid(2L)).thenReturn(anotherGame);
+        when(userRepository.findByid(2L)).thenReturn(user2); // Mock a valid user
+        
+        // Attempt to delete the game
+        assertThrows(ResponseStatusException.class, () -> {
+            gameService.deleteGame(2L, user.getToken());
+        });
+    }
+
+
+
+
+
     /*
     @Test
     void testJoinFullGame() {

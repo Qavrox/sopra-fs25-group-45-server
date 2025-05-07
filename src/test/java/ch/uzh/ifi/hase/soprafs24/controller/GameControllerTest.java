@@ -17,6 +17,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.mockito.ArgumentMatchers.any;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -244,4 +245,58 @@ public class GameControllerTest {
         assertEquals(1, gameWithPlayer.getPlayers().size());
     }
     
+
+
+    @Test
+    public void deleteGameTest() throws Exception{
+
+        // given game
+        Game game = new Game();
+        game.setId(1L);
+        game.setIsPublic(true);
+        game.setSmallBlind(1);
+        game.setBigBlind(1);
+        game.setSmallBlindIndex(0);
+        game.setStartCredit(1L);
+        game.setMaximalPlayers(3);
+        game.setPot(1L);
+        game.setCallAmount(1L);
+        game.setPlayers(Collections.emptyList());
+        game.setStatus(GameStatus.WAITING);
+        game.setCommunityCards(Collections.emptyList());
+        game.setCreatorId(1L);    
+
+        // given user
+        User user= new User();
+        user.setName("Firstname Lastname");
+        user.setUsername("firstname@lastname");
+        user.setStatus(UserStatus.OFFLINE);
+        user.setCreationDate(java.time.LocalDate.now());
+        user.setToken("valid-token");
+
+
+        // when
+        given(gameService.deleteGame(game.getId(), user.getToken())).willReturn(game);
+        MockHttpServletRequestBuilder deleteRequest = delete("/games/" + game.getId())
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", "Bearer " + user.getToken());
+
+        // then
+        mockMvc.perform(deleteRequest)
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.id").value(game.getId()))
+                .andExpect(jsonPath("$.creatorId").value(game.getCreatorId()))
+                .andExpect(jsonPath("$.isPublic").value(game.getIsPublic()))
+                .andExpect(jsonPath("$.smallBlind").value(game.getSmallBlind()))
+                .andExpect(jsonPath("$.bigBlind").value(game.getBigBlind()))
+                .andExpect(jsonPath("$.smallBlindIndex").value(game.getSmallBlindIndex()))
+                .andExpect(jsonPath("$.startCredit").value(game.getStartCredit()))
+                .andExpect(jsonPath("$.maximalPlayers").value(game.getMaximalPlayers()))
+                .andExpect(jsonPath("$.pot").value(game.getPot()))
+                .andExpect(jsonPath("$.callAmount").value(game.getCallAmount()))
+                .andExpect(jsonPath("$.players").isEmpty())
+                .andExpect(jsonPath("$.gameStatus").value(game.getStatus().toString()))
+                .andExpect(jsonPath("$.communityCards").isEmpty());
+    }
 }

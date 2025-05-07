@@ -114,7 +114,7 @@ public class GameService {
         
         // Find the game and validate it exists
         Game game = gameRepository.findByid(gameId);
-        if (game == null) {
+        if (game == null || game.getStatus() == GameStatus.ARCHIVED) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found");
         }
         
@@ -205,7 +205,7 @@ public class GameService {
     public Game getGameById(Long id, String authenticatorToken) {
 
         Game game = gameRepository.findByid(id);
-        if (game == null) {
+        if (game == null || game.getStatus() == GameStatus.ARCHIVED) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found");
         }
 
@@ -752,6 +752,31 @@ public class GameService {
 
         // Calculate win probability using OddsCalculator
         return OddsCalculator.calculateWinProbability(playerCards, communityCardObjects, game.getPlayers().size());
+    }
+
+    public Game deleteGame(Long gameId, String token){
+        Game game = gameRepository.findByid(gameId);
+        if (game == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found");
+        }
+
+        // Check if the token is the same as the creator of the game in case the token is not empty
+        long gameCreatorId = game.getCreatorId();
+
+        User gameCreator = userRepository.findByid(gameCreatorId);
+
+        if(!(token.isEmpty()) && gameCreator.getToken()!=token){
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You are not the creator of the game. You cannot delete the game.");
+        }
+
+        // clear players
+        game.setPlayers(null);
+
+        // Archieve the the game
+        game.setStatus(GameStatus.ARCHIVED);
+        gameRepository.save(game);
+        gameRepository.flush();
+        return game;
     }
 
     public String getHandDescription(Player player, List<String> communityCards) {
