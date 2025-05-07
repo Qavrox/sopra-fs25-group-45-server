@@ -855,7 +855,7 @@ public class GameServiceTest {
         // Delete the game
         gameService.deleteGame(game.getId(), user.getToken());
 
-        assertEquals(game.getStatus(), GameStatus.ARCHIEVED);
+        assertEquals(game.getStatus(), GameStatus.ARCHIVED);
         assertThrows(ResponseStatusException.class, () -> {
             gameService.getGameById(game.getId(), user.getToken());
         });
