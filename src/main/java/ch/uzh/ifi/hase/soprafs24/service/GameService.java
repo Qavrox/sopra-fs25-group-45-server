@@ -114,7 +114,7 @@ public class GameService {
         
         // Find the game and validate it exists
         Game game = gameRepository.findByid(gameId);
-        if (game == null || game.getStatus() == GameStatus.ARCHIEVED) {
+        if (game == null || game.getStatus() == GameStatus.ARCHIVED) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found");
         }
         
@@ -205,7 +205,7 @@ public class GameService {
     public Game getGameById(Long id, String authenticatorToken) {
 
         Game game = gameRepository.findByid(id);
-        if (game == null || game.getStatus() == GameStatus.ARCHIEVED) {
+        if (game == null || game.getStatus() == GameStatus.ARCHIVED) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found");
         }
 
@@ -773,7 +773,7 @@ public class GameService {
         game.setPlayers(null);
 
         // Archieve the the game
-        game.setStatus(GameStatus.ARCHIEVED);
+        game.setStatus(GameStatus.ARCHIVED);
         gameRepository.save(game);
         gameRepository.flush();
         return game;
