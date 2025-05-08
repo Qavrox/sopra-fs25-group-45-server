@@ -13,6 +13,7 @@ import ch.uzh.ifi.hase.soprafs24.rest.dto.PlayerActionPostDTO;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.ProbabilityResponse;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.GameResultsDTO;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.GameStatisticsDTO;
+import ch.uzh.ifi.hase.soprafs24.rest.dto.PokerAdviceResponseDTO;
 import ch.uzh.ifi.hase.soprafs24.rest.mapper.DTOMapper;
 import ch.uzh.ifi.hase.soprafs24.service.GameService;
 import ch.uzh.ifi.hase.soprafs24.service.UserService;
@@ -187,6 +188,32 @@ public class GameActionController {
         statistics.setPotsWon(1);
         response.setStatistics(statistics);
 
+        return response;
+    }
+    
+    /**
+     * Get AI-generated poker advice for the current game state
+     */
+    @GetMapping("/games/{gameId}/poker-advice")
+    @ResponseStatus(HttpStatus.OK)
+    @ResponseBody
+    public PokerAdviceResponseDTO getPokerAdvice(
+            @PathVariable("gameId") Long gameId,
+            @RequestHeader("Authorization") String authenticatorToken) {
+        
+        String token = authenticatorToken.substring(7);
+        User user = userService.getUserByToken(token);
+        if (user == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid token");
+        }
+
+        // Get advice from Gemini API
+        String advice = gameService.getPokerAdvice(gameId, user.getId());
+        
+        // Create and return response
+        PokerAdviceResponseDTO response = new PokerAdviceResponseDTO();
+        response.setAdvice(advice);
+        
         return response;
     }
 }
