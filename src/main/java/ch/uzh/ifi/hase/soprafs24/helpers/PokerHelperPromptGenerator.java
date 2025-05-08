@@ -102,10 +102,10 @@ After the pot is awarded, a new hand of Hold'em is ready to be played. The butto
     public static String generatePrompt(
             List<String> communityCards,
             List<String> playerHand,
-            int potSize,
-            int userMoneyLeft,
+            Long potSize,
+            Long userMoneyLeft,
             GameStatus gameStatus,
-            float chanceToWin) {
+            double chanceToWin) {
         
         // Format the community cards
         String formattedCommunityCards = formatCardList(communityCards);
@@ -117,7 +117,7 @@ After the pot is awarded, a new hand of Hold'em is ready to be played. The butto
         String formattedGameStatus = gameStatus.name().toLowerCase();
         
         // Format chance to win as a percentage
-        String formattedChanceToWin = String.format("%.1f%%", chanceToWin * 100);
+        String formattedChanceToWin = String.format("%.1f%%", chanceToWin);
         
         // Apply the formatted values to the template
         return String.format(

@@ -1,12 +1,20 @@
 package ch.uzh.ifi.hase.soprafs24.service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.server.ResponseStatusException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.transaction.Transactional;
 
@@ -16,6 +24,7 @@ import ch.uzh.ifi.hase.soprafs24.entity.Game;
 import ch.uzh.ifi.hase.soprafs24.entity.Player;
 import ch.uzh.ifi.hase.soprafs24.entity.User;
 import ch.uzh.ifi.hase.soprafs24.helpers.OddsCalculator;
+import ch.uzh.ifi.hase.soprafs24.helpers.PokerHelperPromptGenerator;
 import ch.uzh.ifi.hase.soprafs24.repository.GameRepository;
 import ch.uzh.ifi.hase.soprafs24.repository.PlayerRepository;
 import ch.uzh.ifi.hase.soprafs24.repository.UserRepository;
@@ -30,6 +39,10 @@ public class GameService {
     private final UserRepository userRepository;
     private final PlayerRepository playerRepository;
     private final Authenticator authenticator;
+    private final RestTemplate restTemplate;
+    
+    @Value("${gemini.api.key:}")
+    private String geminiApiKey;
 
     @Autowired
     public GameService(@Qualifier("gameRepository") GameRepository gameRepository,
@@ -38,6 +51,7 @@ public class GameService {
         this.userRepository = userRepository;
         this.playerRepository = playerRepository;
         this.authenticator = new Authenticator(userRepository, gameRepository);
+        this.restTemplate = new RestTemplate();
     }    
 
     
@@ -801,6 +815,140 @@ public class GameService {
         
         // Return hand description
         return handValue.toString();
+    }
+
+    /**
+     * Get poker advice from Gemini AI for the specified player in the game
+     * 
+     * @param gameId The ID of the game
+     * @param userId The ID of the user requesting advice
+     * @return AI-generated poker advice or an error message if the API call fails
+     */
+    public String getPokerAdvice(Long gameId, Long userId) {
+        // Validate API key
+        if (geminiApiKey == null || geminiApiKey.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, 
+                "Gemini API key is not configured");
+        }
+        
+        // Get the game state
+        Game game = gameRepository.findByid(gameId);
+        if (game == null || game.getStatus() == GameStatus.ARCHIVED) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found");
+        }
+        
+        // Find the player in the game
+        Player player = null;
+        for (Player p : game.getPlayers()) {
+            if (p.getUserId().equals(userId)) {
+                player = p;
+                break;
+            }
+        }
+        
+        if (player == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, 
+                "Player not found in this game");
+        }
+        
+        // Get the game state information
+        List<String> communityCards = game.getCommunityCards();
+        List<String> playerHand = player.getHand();
+        Long potSize = game.getPot();
+        Long playerCredit = player.getCredit();
+        GameStatus gameStatus = game.getGameStatus();
+        
+        // Calculate win probability
+        double winProbability = calculateWinProbability(gameId, userId);
+        
+        // Generate the prompt for Gemini
+        String prompt = PokerHelperPromptGenerator.generatePrompt(
+            communityCards,
+            playerHand,
+            potSize,
+            playerCredit,
+            gameStatus,
+            (float) winProbability
+        );
+        
+        // Prepare the request body for Gemini API
+        Map<String, Object> requestBody = new HashMap<>();
+        Map<String, Object> content = new HashMap<>();
+        List<Map<String, Object>> contents = new ArrayList<>();
+        List<Map<String, Object>> parts = new ArrayList<>();
+        
+        Map<String, Object> textPart = new HashMap<>();
+        textPart.put("text", prompt);
+        parts.add(textPart);
+        
+        content.put("parts", parts);
+        contents.add(content);
+        
+        requestBody.put("contents", contents);
+        
+        // Set headers
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        
+        HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
+        
+        try {
+            // Make the API call
+            String url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=" + geminiApiKey;
+            ResponseEntity<Map> response = restTemplate.postForEntity(url, entity, Map.class);
+            
+            // Extract and return the response text
+            if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
+                Map<String, Object> responseBody = response.getBody();
+                
+                // Check for error in response
+                if (responseBody.containsKey("error")) {
+                    Map<String, Object> error = (Map<String, Object>) responseBody.get("error");
+                    String errorMessage = error.containsKey("message") 
+                        ? (String) error.get("message") 
+                        : "Unknown error from Gemini API";
+                    throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, 
+                        "Gemini API error: " + errorMessage);
+                }
+                
+                // Parse the nested JSON structure to extract only the text content
+                if (!responseBody.containsKey("candidates")) {
+                    return "Unable to get poker advice at this time - no candidates in response.";
+                }
+                
+                List<Map<String, Object>> candidates = (List<Map<String, Object>>) responseBody.get("candidates");
+                if (candidates == null || candidates.isEmpty()) {
+                    return "Unable to get poker advice at this time - empty candidates list.";
+                }
+                
+                Map<String, Object> candidate = candidates.get(0);
+                if (!candidate.containsKey("content")) {
+                    return "Unable to get poker advice at this time - no content in candidate.";
+                }
+                
+                Map<String, Object> candidateContent = (Map<String, Object>) candidate.get("content");
+                if (!candidateContent.containsKey("parts")) {
+                    return "Unable to get poker advice at this time - no parts in content.";
+                }
+                
+                List<Map<String, Object>> contentParts = (List<Map<String, Object>>) candidateContent.get("parts");
+                if (contentParts == null || contentParts.isEmpty()) {
+                    return "Unable to get poker advice at this time - empty parts list.";
+                }
+                
+                Map<String, Object> part = contentParts.get(0);
+                if (!part.containsKey("text")) {
+                    return "Unable to get poker advice at this time - no text in part.";
+                }
+                
+                return (String) part.get("text");
+            }
+            
+            return "Unable to get poker advice at this time - unexpected response status: " + response.getStatusCode();
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, 
+                "Error calling Gemini API: " + e.getMessage());
+        }
     }
 
 }
