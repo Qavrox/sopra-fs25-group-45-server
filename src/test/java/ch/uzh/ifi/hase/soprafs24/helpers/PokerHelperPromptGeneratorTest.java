@@ -3,6 +3,7 @@ package ch.uzh.ifi.hase.soprafs24.helpers;
 import ch.uzh.ifi.hase.soprafs24.constant.GameStatus;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -17,10 +18,10 @@ class PokerHelperPromptGeneratorTest {
         // Arrange
         List<String> communityCards = Arrays.asList("AH", "QC", "7D");
         List<String> playerHand = Arrays.asList("KS", "JH");
-        int potSize = 100;
-        int userMoneyLeft = 500;
+        Long potSize = 100L;
+        Long userMoneyLeft = 500L;
         GameStatus gameStatus = GameStatus.FLOP;
-        float chanceToWin = 0.35f;
+        double chanceToWin = 0.35;
 
         // Act
         String prompt = PokerHelperPromptGenerator.generatePrompt(
@@ -45,10 +46,10 @@ class PokerHelperPromptGeneratorTest {
         // Arrange
         List<String> communityCards = Arrays.asList("AH", "QC", "7D");
         List<String> playerHand = Arrays.asList("KS", "JH");
-        int potSize = 100;
-        int userMoneyLeft = 500;
+        Long potSize = 100L;
+        Long userMoneyLeft = 500L;
         GameStatus gameStatus = GameStatus.FLOP;
-        float chanceToWin = 0.35f;
+        double chanceToWin = 0.35;
 
         // Act
         String prompt = PokerHelperPromptGenerator.generatePrompt(
@@ -74,10 +75,10 @@ class PokerHelperPromptGeneratorTest {
         // Arrange
         List<String> communityCards = Collections.emptyList();
         List<String> playerHand = Arrays.asList("KS", "JH");
-        int potSize = 100;
-        int userMoneyLeft = 500;
+        Long potSize = 100L;
+        Long userMoneyLeft = 500L;
         GameStatus gameStatus = GameStatus.PREFLOP;
-        float chanceToWin = 0.35f;
+        double chanceToWin = 0.35;
 
         // Act
         String prompt = PokerHelperPromptGenerator.generatePrompt(
@@ -99,14 +100,14 @@ class PokerHelperPromptGeneratorTest {
     void generatePrompt_NullCommunityCards_ReturnsCorrectlyFormattedPrompt() {
         // Arrange
         List<String> playerHand = Arrays.asList("KS", "JH");
-        int potSize = 100;
-        int userMoneyLeft = 500;
+        Long potSize = 100L;
+        Long userMoneyLeft = 500L;
         GameStatus gameStatus = GameStatus.PREFLOP;
-        float chanceToWin = 0.35f;
+        double chanceToWin = 0.35;
 
         // Act
         String prompt = PokerHelperPromptGenerator.generatePrompt(
-                null,
+                new ArrayList<String>(),
                 playerHand,
                 potSize,
                 userMoneyLeft,
@@ -123,10 +124,10 @@ class PokerHelperPromptGeneratorTest {
         // Arrange
         List<String> communityCards = Arrays.asList("AH", "QC", "7D", "2S", "10H");
         List<String> playerHand = Arrays.asList("KS", "JH");
-        int potSize = 100;
-        int userMoneyLeft = 500;
+        Long potSize = 100L;
+        Long userMoneyLeft = 500L;
         GameStatus gameStatus = GameStatus.RIVER;
-        float chanceToWin = 0.35f;
+        double chanceToWin = 0.35;
 
         // Act
         String prompt = PokerHelperPromptGenerator.generatePrompt(
@@ -148,10 +149,10 @@ class PokerHelperPromptGeneratorTest {
         // Arrange
         List<String> communityCards = Arrays.asList("AH", "QC", "7D");
         List<String> playerHand = Arrays.asList("KS", "JH");
-        int potSize = 100;
-        int userMoneyLeft = 500;
+        Long potSize = 100L;
+        Long userMoneyLeft = 500L;
         GameStatus gameStatus = GameStatus.FLOP;
-        float chanceToWin = 0.0f;
+        double chanceToWin = 0.0;
 
         // Act
         String prompt = PokerHelperPromptGenerator.generatePrompt(
@@ -172,10 +173,10 @@ class PokerHelperPromptGeneratorTest {
         // Arrange
         List<String> communityCards = Arrays.asList("AH", "QC", "7D");
         List<String> playerHand = Arrays.asList("KS", "JH");
-        int potSize = 100;
-        int userMoneyLeft = 500;
+        Long potSize = 100L;
+        Long userMoneyLeft = 500L;
         GameStatus gameStatus = GameStatus.FLOP;
-        float chanceToWin = 1.0f;
+        double chanceToWin = 1.0;
 
         // Act
         String prompt = PokerHelperPromptGenerator.generatePrompt(
@@ -196,10 +197,10 @@ class PokerHelperPromptGeneratorTest {
         // Arrange
         List<String> communityCards = Arrays.asList("AH", "QC", "7D", "2S", "10H");
         List<String> playerHand = Arrays.asList("KS", "JH");
-        int potSize = 100;
-        int userMoneyLeft = 500;
+        Long potSize = 100L;
+        Long userMoneyLeft = 500L;
         GameStatus gameStatus = GameStatus.SHOWDOWN;
-        float chanceToWin = 0.35f;
+        double chanceToWin = 0.35;
 
         // Act
         String prompt = PokerHelperPromptGenerator.generatePrompt(

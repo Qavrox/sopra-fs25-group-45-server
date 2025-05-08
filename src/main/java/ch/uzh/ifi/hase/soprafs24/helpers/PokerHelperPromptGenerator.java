@@ -117,7 +117,7 @@ After the pot is awarded, a new hand of Hold'em is ready to be played. The butto
         String formattedGameStatus = gameStatus.name().toLowerCase();
         
         // Format chance to win as a percentage
-        String formattedChanceToWin = String.format("%.1f%%", chanceToWin);
+        String formattedChanceToWin = String.format("%.1f%%", chanceToWin * 100);
         
         // Apply the formatted values to the template
         return String.format(
