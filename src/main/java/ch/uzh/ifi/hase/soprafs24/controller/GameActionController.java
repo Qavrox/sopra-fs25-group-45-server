@@ -194,7 +194,7 @@ public class GameActionController {
     /**
      * Get AI-generated poker advice for the current game state
      */
-    @GetMapping("/games/{gameId}/poker-advice")
+    @GetMapping("/games/{gameId}/advice")
     @ResponseStatus(HttpStatus.OK)
     @ResponseBody
     public PokerAdviceResponseDTO getPokerAdvice(
@@ -205,6 +205,24 @@ public class GameActionController {
         User user = userService.getUserByToken(token);
         if (user == null) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid token");
+        }
+
+        Game game = gameService.getGameById(gameId, token);
+        if (game == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found");
+        }
+
+        // Check if user is a player in the game
+        boolean isUserPlayer = false;
+        for (Player player : game.getPlayers()) {
+            if (player.getUserId().equals(user.getId())) {
+                isUserPlayer = true;
+                break;
+            }
+        }
+
+        if (!isUserPlayer) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You must be a player in the game to get advice");
         }
 
         // Get advice from Gemini API
