@@ -25,6 +25,7 @@ import ch.uzh.ifi.hase.soprafs24.entity.Player;
 import ch.uzh.ifi.hase.soprafs24.entity.User;
 import ch.uzh.ifi.hase.soprafs24.helpers.OddsCalculator;
 import ch.uzh.ifi.hase.soprafs24.helpers.PokerHelperPromptGenerator;
+import ch.uzh.ifi.hase.soprafs24.helpers.SecretManagerHelper;
 import ch.uzh.ifi.hase.soprafs24.repository.GameRepository;
 import ch.uzh.ifi.hase.soprafs24.repository.PlayerRepository;
 import ch.uzh.ifi.hase.soprafs24.repository.UserRepository;
@@ -40,18 +41,19 @@ public class GameService {
     private final PlayerRepository playerRepository;
     private final Authenticator authenticator;
     private final RestTemplate restTemplate;
+    private final SecretManagerHelper secretManagerHelper;
     
-    @Value("${gemini.api.key:}")
-    private String geminiApiKey;
-
     @Autowired
     public GameService(@Qualifier("gameRepository") GameRepository gameRepository,
-                       @Qualifier("userRepository") UserRepository userRepository, @Qualifier("playerRepository") PlayerRepository playerRepository) {
+                       @Qualifier("userRepository") UserRepository userRepository, 
+                       @Qualifier("playerRepository") PlayerRepository playerRepository,
+                       SecretManagerHelper secretManagerHelper) {
         this.gameRepository = gameRepository;
         this.userRepository = userRepository;
         this.playerRepository = playerRepository;
         this.authenticator = new Authenticator(userRepository, gameRepository);
         this.restTemplate = new RestTemplate();
+        this.secretManagerHelper = secretManagerHelper;
     }    
 
     
@@ -825,11 +827,8 @@ public class GameService {
      * @return AI-generated poker advice or an error message if the API call fails
      */
     public String getPokerAdvice(Long gameId, Long userId) {
-        // Validate API key
-        if (geminiApiKey == null || geminiApiKey.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, 
-                "Gemini API key is not configured");
-        }
+        // Get API key from SecretManagerHelper
+        String geminiApiKey = secretManagerHelper.getGeminiApiKey();
         
         // Get the game state
         Game game = gameRepository.findByid(gameId);

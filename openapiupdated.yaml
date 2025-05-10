@@ -542,7 +542,29 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-      
+  
+  /games/{gameId}/advice:
+    get:
+      summary: Get poker advice
+      description: Get poker advice for the specified player in the game.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: gameId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Poker advice retrieved.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PokerAdviceResponse'
+        '401':
+          description: Unauthorized.
+            
       
   /games/{gameId}/probability:
     get:
@@ -811,6 +833,12 @@ components:
               type: number
             potsWon:
               type: number
+
+    PokerAdviceResponse:
+      type: object
+      properties:
+        advice:
+          type: string
 
     ProbabilityResponse:
       type: object
