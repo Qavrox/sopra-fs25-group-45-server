@@ -58,6 +58,29 @@ public class GameHistoryService {
         history.setResult(result);
         history.setWinnings(winnings);
         history.setOtherPlayerIds(otherPlayerIds);
+
+        // Update user statistics
+        User user = userRepository.findByid(userId);
+        if (user != null) {
+        // Update games played
+        Long gamesPlayed = user.getGamesPlayed();
+        if (gamesPlayed == null) gamesPlayed = 0L;
+        user.setGamesPlayed(gamesPlayed + 1);
+
+        // Update games won
+        if ("Win".equals(result)) {
+            Long gamesWon = user.getGamesWon();
+            if (gamesWon == null) gamesWon = 0L;
+            user.setGamesWon(gamesWon + 1);
+        }
+        // Update total winnings
+        Long totalWinnings = user.getTotalWinnings();
+        if (totalWinnings == null) totalWinnings = 0L;
+        user.setTotalWinnings(totalWinnings + winnings);
+        // Update win rate
+        user.updateWinRate();
+        userRepository.save(user);
+    }
         
         // Save and return
         return gameHistoryRepository.save(history);
@@ -124,27 +147,27 @@ public class GameHistoryService {
      * @return list of LeaderboardEntryDTO sorted by total winnings
      */
     public List<LeaderboardEntryDTO> getLeaderboardByWinnings() {
-        List<Object[]> results = gameHistoryRepository.findTopPlayersByWinnings();
+        List<User> users = userRepository.findAll();
         List<LeaderboardEntryDTO> leaderboard = new ArrayList<>();
         
+        // ranking
+        users.sort((u1, u2) -> Long.compare(
+            u2.getTotalWinnings() != null ? u2.getTotalWinnings() : 0L,
+            u1.getTotalWinnings() != null ? u1.getTotalWinnings() : 0L
+        ));
+        
         long rank = 1;
-        for (Object[] result : results) {
-            Long userId = (Long) result[0];
-            Long totalWinnings = ((Number) result[1]).longValue();
-            Long gamesPlayed = ((Number) result[2]).longValue();
+        for (User user : users) {
+            LeaderboardEntryDTO entry = new LeaderboardEntryDTO();
+            entry.setUserId(user.getId());
+            entry.setUsername(user.getUsername());
+            entry.setDisplayName(user.getName());
+            entry.setWinRate(user.getWinRate());
+            entry.setTotalWinnings(user.getTotalWinnings());
+            entry.setGamesPlayed(user.getGamesPlayed());
+            entry.setRank(rank++);
             
-            User user = userRepository.findByid(userId);
-            if (user != null) {
-                LeaderboardEntryDTO entry = new LeaderboardEntryDTO();
-                entry.setUserId(userId);
-                entry.setUsername(user.getUsername());
-                entry.setDisplayName(user.getName());
-                entry.setTotalWinnings(totalWinnings);
-                entry.setGamesPlayed(gamesPlayed);
-                entry.setRank(rank++);
-                
-                leaderboard.add(entry);
-            }
+            leaderboard.add(entry);
         }
         
         return leaderboard;
@@ -155,29 +178,24 @@ public class GameHistoryService {
      * @return list of LeaderboardEntryDTO sorted by win rate
      */
     public List<LeaderboardEntryDTO> getLeaderboardByWinRate() {
-        List<Object[]> results = gameHistoryRepository.findTopPlayersByWinRate();
+        List<User> users = userRepository.findByGamesPlayedGreaterThanEqual(1L);
         List<LeaderboardEntryDTO> leaderboard = new ArrayList<>();
         
+        // ranking
+        users.sort((u1, u2) -> Double.compare(u2.getWinRate(), u1.getWinRate()));
+        
         long rank = 1;
-        for (Object[] result : results) {
-            Long userId = (Long) result[0];
-            Long wins = ((Number) result[1]).longValue();
-            Long gamesPlayed = ((Number) result[2]).longValue();
+        for (User user : users) {
+            LeaderboardEntryDTO entry = new LeaderboardEntryDTO();
+            entry.setUserId(user.getId());
+            entry.setUsername(user.getUsername());
+            entry.setDisplayName(user.getName());
+            entry.setWinRate(user.getWinRate());
+            entry.setTotalWinnings(user.getTotalWinnings());
+            entry.setGamesPlayed(user.getGamesPlayed());
+            entry.setRank(rank++);
             
-            double winRate = (double) wins / gamesPlayed * 100;
-            
-            User user = userRepository.findByid(userId);
-            if (user != null) {
-                LeaderboardEntryDTO entry = new LeaderboardEntryDTO();
-                entry.setUserId(userId);
-                entry.setUsername(user.getUsername());
-                entry.setDisplayName(user.getName());
-                entry.setWinRate(winRate);
-                entry.setGamesPlayed(gamesPlayed);
-                entry.setRank(rank++);
-                
-                leaderboard.add(entry);
-            }
+            leaderboard.add(entry);
         }
         
         return leaderboard;

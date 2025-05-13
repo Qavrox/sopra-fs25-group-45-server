@@ -45,6 +45,18 @@ public class User implements Serializable {
   @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
   private UserFriends friends;
 
+  @Column(nullable = true)
+  private Long gamesPlayed = 0L;
+  
+  @Column(nullable = true)
+  private Long gamesWon = 0L;
+  
+  @Column(nullable = true)
+  private Double winRate = 0.0;
+  
+  @Column(nullable = true)
+  private Long totalWinnings = 0L;
+
   public UserFriends getFriends() {
     return friends;
   }
@@ -151,6 +163,46 @@ public class User implements Serializable {
     if (this.friends == null) {
           this.friends = new UserFriends();
           this.friends.setUser(this);
+    }
+  }
+
+  public Long getGamesPlayed() {
+    return gamesPlayed;
+  }
+
+  public void setGamesPlayed(Long gamesPlayed) {
+    this.gamesPlayed = gamesPlayed;
+  }
+
+  public Long getGamesWon() {
+    return gamesWon;
+  }
+
+  public void setGamesWon(Long gamesWon) {
+    this.gamesWon = gamesWon;
+  }
+
+  public Double getWinRate() {
+    return winRate;
+  }
+
+  public void setWinRate(Double winRate) {
+    this.winRate = winRate;
+  }
+
+  public Long getTotalWinnings() {
+    return totalWinnings;
+  }
+
+  public void setTotalWinnings(Long totalWinnings) {
+    this.totalWinnings = totalWinnings;
+  }
+  
+  public void updateWinRate() {
+    if (this.gamesPlayed > 0) {
+      this.winRate = (double) this.gamesWon / this.gamesPlayed * 100;
+    } else {
+      this.winRate = 0.0;
     }
   }
 }
