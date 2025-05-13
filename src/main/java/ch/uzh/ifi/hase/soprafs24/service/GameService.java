@@ -528,15 +528,11 @@ public class GameService {
         }
         
         if (activePlayers == 1) {
-            // Award pot to last player standing
-            lastActivePlayer.setCredit(lastActivePlayer.getCredit() + game.getPot());
             // Record game history
-            endGameAndRecordHistory(game.getId());
-            game.setPot(0L);
+            List<Player> winners = new ArrayList<>();
+            winners.add(lastActivePlayer);
+            recordGameResults(game, winners);
             game.setGameStatus(GameStatus.GAMEOVER);
-            
-
-            return;
         }
         
         // Advance to next game phase
