@@ -15,12 +15,15 @@ import java.util.List;
 import java.util.Objects;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
+import java.util.stream.Collectors;
 
 import javax.transaction.Transactional;
 
 import ch.uzh.ifi.hase.soprafs24.constant.GameStatus;
 import ch.uzh.ifi.hase.soprafs24.constant.Card;
 import ch.uzh.ifi.hase.soprafs24.entity.Game;
+import ch.uzh.ifi.hase.soprafs24.entity.GameHistory;
 import ch.uzh.ifi.hase.soprafs24.entity.Player;
 import ch.uzh.ifi.hase.soprafs24.entity.User;
 import ch.uzh.ifi.hase.soprafs24.helpers.OddsCalculator;
@@ -30,6 +33,8 @@ import ch.uzh.ifi.hase.soprafs24.repository.GameRepository;
 import ch.uzh.ifi.hase.soprafs24.repository.PlayerRepository;
 import ch.uzh.ifi.hase.soprafs24.repository.UserRepository;
 import ch.uzh.ifi.hase.soprafs24.constant.PlayerAction;
+import ch.uzh.ifi.hase.soprafs24.rest.dto.LeaderboardEntryDTO;
+import ch.uzh.ifi.hase.soprafs24.rest.dto.UserStatisticsDTO;
 import ch.uzh.ifi.hase.soprafs24.service.Authenticator;
 
 @Service
@@ -42,6 +47,9 @@ public class GameService {
     private final Authenticator authenticator;
     private final RestTemplate restTemplate;
     private final SecretManagerHelper secretManagerHelper;
+    
+    @Autowired
+    private GameHistoryService gameHistoryService;
     
     @Autowired
     public GameService(@Qualifier("gameRepository") GameRepository gameRepository,
@@ -522,8 +530,12 @@ public class GameService {
         if (activePlayers == 1) {
             // Award pot to last player standing
             lastActivePlayer.setCredit(lastActivePlayer.getCredit() + game.getPot());
+            // Record game history
+            endGameAndRecordHistory(game.getId());
             game.setPot(0L);
             game.setGameStatus(GameStatus.GAMEOVER);
+            
+
             return;
         }
         
@@ -564,7 +576,11 @@ public class GameService {
                 
                 // Determine winner and award pot
                 determineWinnerAndAwardPot(game);
+                endGameAndRecordHistory(game.getId());
                 game.setGameStatus(GameStatus.GAMEOVER);
+                
+                // Record game history
+
                 break;
                 
             default:
@@ -582,18 +598,19 @@ public class GameService {
     
     /**
      * Determine the winner and award the pot
-     * This is a placeholder - you would need to implement poker hand evaluation logic
      */
     private void determineWinnerAndAwardPot(Game game) {
-        // For now, just award the pot to the first active player
-        // In a real implementation, you would evaluate poker hands
-        for (Player player : game.getPlayers()) {
-            if (!player.getHasFolded()) {
-                player.setCredit(player.getCredit() + game.getPot());
-                game.setPot(0L);
-                break;
-            }
+        // Determine winners based on hand evaluation
+        List<Player> winners = determineWinners(game.getId());
+        
+        // Calculate pot share per winner
+        Long potPerWinner = game.getPot() / winners.size();
+        
+        // Award pot to winners
+        for (Player winner : winners) {
+            winner.setCredit(winner.getCredit() + potPerWinner);
         }
+
     }
     
     /**
@@ -950,4 +967,130 @@ public class GameService {
         }
     }
 
+
+    /**
+     * End a game and record game history for all players
+     * This method should be called when a game is completed
+     * @param gameId - ID of the game to end
+     */
+    public void endGameAndRecordHistory(Long gameId) {
+        Game game = gameRepository.findByid(gameId);
+        if (game == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found");
+        }
+        
+        // Determine winners and record game results
+        List<Player> winners = determineWinners(gameId);
+        recordGameResults(game, winners);
+        
+        // Update game status to completed
+        //game.setGameStatus(GameStatus.ARCHIVED);
+        gameRepository.save(game);
+        gameRepository.flush();
+    }
+    
+    /**
+     * Records the game results for all players
+     */
+    private void recordGameResults(Game game, List<Player> winners) {
+        // Get all player IDs except the current player
+        List<Long> allPlayerIds = game.getPlayers().stream()
+                .map(Player::getUserId)
+                .collect(Collectors.toList());
+        
+        System.out.println("players: " + allPlayerIds);
+        // Calculate winnings for each player
+        Long potPerWinner = game.getPot() / winners.size();
+        
+        // Record results for all players
+        for (Player player : game.getPlayers()) {
+            // Create a list of other player IDs
+            List<Long> otherPlayerIds = new ArrayList<>(allPlayerIds);
+            otherPlayerIds.remove(player.getUserId());
+            
+            // Determine if this player is a winner
+            boolean isWinner = winners.stream()
+                    .anyMatch(w -> w.getUserId().equals(player.getUserId()));
+            
+            // Calculate winnings - winners get their share of the pot, losers get negative their bet amount
+            Long winnings = 0L;
+            if (isWinner) {
+                winnings = potPerWinner;
+            } else {
+                // For losers, winnings is negative (they lost their bet)
+                winnings = player.getCredit() - 1000;
+            }
+
+            System.out.println("winnings: " + winnings);
+            
+            // Record the game result
+            gameHistoryService.recordGameResult(
+                    player.getUserId(),
+                    game.getId(),
+                    isWinner ? "Win" : "Loss",
+                    winnings,
+                    otherPlayerIds
+            );
+        }
+    }
+    
+    /**
+     * Get game history for a user
+     * @param userId - ID of the user
+     * @param token - authentication token
+     * @return list of game history records
+     */
+    public List<GameHistory> getUserGameHistory(Long userId, String token) {
+        // Validate the token and find the user
+        authenticator.checkTokenValidity(token);
+        User user = userRepository.findByToken(token);
+        
+        // Check if the requesting user is the same as the target user
+        if (!user.getId().equals(userId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You can only view your own game history");
+        }
+        
+        // Get game history from the service
+        return gameHistoryService.getUserGameHistory(userId);
+    }
+    
+    /**
+     * Get user statistics
+     * @param userId - ID of the user
+     * @param token - authentication token
+     * @return user statistics
+     */
+    public UserStatisticsDTO getUserStatistics(Long userId, String token) {
+        // Validate the token and find the user
+        authenticator.checkTokenValidity(token);
+        
+        // Get statistics from the service
+        return gameHistoryService.getUserStatistics(userId);
+    }
+    
+    /**
+     * Get leaderboard by winnings
+     * @param token - authentication token
+     * @return leaderboard sorted by total winnings
+     */
+    public List<LeaderboardEntryDTO> getLeaderboardByWinnings(String token) {
+        // Validate the token
+        authenticator.checkTokenValidity(token);
+        
+        // Get leaderboard from the service
+        return gameHistoryService.getLeaderboardByWinnings();
+    }
+    
+    /**
+     * Get leaderboard by win rate
+     * @param token - authentication token
+     * @return leaderboard sorted by win rate
+     */
+    public List<LeaderboardEntryDTO> getLeaderboardByWinRate(String token) {
+        // Validate the token
+        authenticator.checkTokenValidity(token);
+        
+        // Get leaderboard from the service
+        return gameHistoryService.getLeaderboardByWinRate();
+    }
 }
