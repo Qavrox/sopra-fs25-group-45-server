@@ -68,10 +68,10 @@ public class GameResultsControllerTest {
         // Set up mocks
         given(userService.getUserByToken("valid-token")).willReturn(user);
         given(gameService.getGameById(eq(1L), any())).willReturn(game);
-        given(gameService.determineWinners(eq(1L))).willReturn(Arrays.asList(winner));
+        // mock ups
+        game.setWinners(Arrays.asList(winner));
         given(gameService.getHandDescription(eq(winner), eq(communityCards))).willReturn("Four of a Kind: Aces");
 
-        // when/then
         mockMvc.perform(MockMvcRequestBuilders.get("/games/1/results")
                 .header("Authorization", "Bearer valid-token"))
                 .andExpect(status().isOk())
@@ -142,11 +142,10 @@ public class GameResultsControllerTest {
 
         given(userService.getUserByToken("valid-token")).willReturn(user);
         given(gameService.getGameById(eq(1L), any())).willReturn(game);
-        given(gameService.determineWinners(eq(1L))).willReturn(new ArrayList<>());
+        game.setWinners(new ArrayList<>());
 
-        // when/then
         mockMvc.perform(MockMvcRequestBuilders.get("/games/1/results")
                 .header("Authorization", "Bearer valid-token"))
                 .andExpect(status().isInternalServerError());
     }
-} 
+}
