@@ -62,6 +62,9 @@ public class Player {
     
     @Column(nullable = true)
     private PlayerAction lastAction;
+    
+    @Column(nullable = true)
+    private Long totalBets = 0L;
 
     public Long getUserId() {
         return userId;
@@ -121,5 +124,17 @@ public class Player {
 
     public void setId(Long id) {
         this.id = id;
+    }
+
+    public Long getTotalBets() {
+        return totalBets;
+    }
+    
+    public void setTotalBets(Long totalBets) {
+        this.totalBets = totalBets;
+    }
+
+    public void addToTotalBets(Long amount) {
+        this.totalBets += amount;
     }
 }

@@ -53,6 +53,8 @@ public class Game implements Serializable {
     @OneToMany(mappedBy = "game", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Player> players = new ArrayList<>();
 
+    @OneToMany(mappedBy = "game", fetch = FetchType.EAGER)
+    private List<Player> winners;
 
     @Column(name = "card", nullable = false)
     @ElementCollection
@@ -194,6 +196,14 @@ public class Game implements Serializable {
     }
     public Long getPot(){
         return pot;
+    }
+
+    public List<Player> getWinners() {
+        return winners;
+    }
+    
+    public void setWinners(List<Player> winners) {
+        this.winners = winners;
     }
 
     /**
@@ -375,6 +385,7 @@ public class Game implements Serializable {
             if (pot == null) {
                 pot = 0L;
             }
+            player.addToTotalBets(player.getCurrentBet());
             pot += player.getCurrentBet();
             player.setCurrentBet(0L);
         }

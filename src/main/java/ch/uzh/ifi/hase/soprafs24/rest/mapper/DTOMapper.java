@@ -3,6 +3,7 @@ package ch.uzh.ifi.hase.soprafs24.rest.mapper;
 import ch.uzh.ifi.hase.soprafs24.entity.Game;
 import ch.uzh.ifi.hase.soprafs24.entity.Player;
 import ch.uzh.ifi.hase.soprafs24.entity.User;
+import ch.uzh.ifi.hase.soprafs24.entity.GameHistory;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.GameCreationPostDTO;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.GameGetDTO;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.JoinGamePostDTO;
@@ -13,6 +14,8 @@ import ch.uzh.ifi.hase.soprafs24.rest.dto.UserPostDTO;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.UserProfileDTO;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.UserPutDTO;
 import ch.uzh.ifi.hase.soprafs24.constant.UserStatus;
+import ch.uzh.ifi.hase.soprafs24.rest.dto.GameHistoryDTO;
+
 import org.mapstruct.*;
 import org.mapstruct.factory.Mappers;
 
@@ -120,4 +123,22 @@ public interface DTOMapper {
     default boolean userStatusToBoolean(UserStatus status) {
         return status == UserStatus.ONLINE;
     }
+
+    @Mapping(source = "id", target = "id")
+    @Mapping(source = "userId", target = "userId")
+    @Mapping(source = "gameId", target = "gameId")
+    @Mapping(source = "playedAt", target = "playedAt")
+    @Mapping(source = "result", target = "result")
+    @Mapping(source = "winnings", target = "winnings")
+    @Mapping(source = "otherPlayerIds", target = "otherPlayerIds")
+    GameHistoryDTO convertEntityToGameHistoryDTO(GameHistory gameHistory);
+
+    @Mapping(source = "id", target = "id")
+    @Mapping(source = "userId", target = "userId")
+    @Mapping(source = "gameId", target = "gameId")
+    @Mapping(source = "playedAt", target = "playedAt")
+    @Mapping(source = "result", target = "result")
+    @Mapping(source = "winnings", target = "winnings")
+    @Mapping(source = "otherPlayerIds", target = "otherPlayerIds")
+    GameHistory convertGameHistoryDTOtoEntity(GameHistoryDTO gameHistoryDTO);
 }
