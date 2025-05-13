@@ -531,6 +531,8 @@ public class GameService {
             // Record game history
             List<Player> winners = new ArrayList<>();
             winners.add(lastActivePlayer);
+            game.setWinners(winners);
+            lastActivePlayer.setCredit(lastActivePlayer.getCredit() + game.getPot());
             recordGameResults(game, winners);
             game.setGameStatus(GameStatus.GAMEOVER);
         }
@@ -741,6 +743,8 @@ public class GameService {
                 winners.add(player);
             }
         }
+
+        game.setWinners(winners);
 
         return winners;
     }
@@ -1011,10 +1015,10 @@ public class GameService {
             // Calculate winnings - winners get their share of the pot, losers get negative their bet amount
             Long winnings = 0L;
             if (isWinner) {
-                winnings = potPerWinner;
+                winnings = potPerWinner - player.getTotalBets();
             } else {
                 // For losers, winnings is negative (they lost their bet)
-                winnings = player.getCredit() - 1000;
+                winnings = - player.getTotalBets();
             }
 
             System.out.println("winnings: " + winnings);
