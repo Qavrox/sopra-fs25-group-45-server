@@ -798,12 +798,12 @@ public class GameService {
 
         User gameCreator = userRepository.findByid(gameCreatorId);
 
-        if(!(token.isEmpty()) && gameCreator.getToken()!=token){
+        if(!(token.isEmpty()) && !gameCreator.getToken().equals(token)){
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You are not the creator of the game. You cannot delete the game.");
         }
 
         // clear players
-        game.setPlayers(null);
+        game.getPlayers().clear();
 
         // Archieve the the game
         game.setStatus(GameStatus.ARCHIVED);
