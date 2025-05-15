@@ -6,6 +6,7 @@ import ch.uzh.ifi.hase.soprafs24.entity.Game;
 import ch.uzh.ifi.hase.soprafs24.entity.Player;
 import ch.uzh.ifi.hase.soprafs24.repository.GameRepository;
 import ch.uzh.ifi.hase.soprafs24.repository.PlayerRepository;
+import ch.uzh.ifi.hase.soprafs24.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -30,6 +31,9 @@ public class PlayerActionServiceTest {
 
     @Mock
     private GameHistoryService gameHistoryService;
+
+    @Mock
+    private UserRepository userRepository;
 
     @InjectMocks
     private GameService gameService;
@@ -88,6 +92,7 @@ public class PlayerActionServiceTest {
         when(gameRepository.save(any(Game.class))).thenReturn(testGame);
         when(playerRepository.save(any(Player.class))).thenAnswer(i -> i.getArguments()[0]);
         when(gameHistoryService.recordGameResult(any(), any(), any(), any(), any())).thenReturn(null);
+
     }
 
     @Test
@@ -392,7 +397,7 @@ public class PlayerActionServiceTest {
         
         assertTrue(exception.getMessage().contains("It's not your turn"));
     }
-    /* 
+     
     @Test
     public void testGamePhaseProgression() {
         // Test progression through all game phases
@@ -445,7 +450,7 @@ public class PlayerActionServiceTest {
         result = gameService.processPlayerAction(1L, 1L, PlayerAction.CHECK, 0L);
         assertEquals(GameStatus.GAMEOVER, result.getGameStatus());
     }
-    /* 
+    
     @Test
     public void testOnlyOnePlayerRemaining() {
         // Setup game in PREFLOP state
@@ -464,5 +469,5 @@ public class PlayerActionServiceTest {
         
         assertFalse(player1.getHasFolded());
     }
-    */
+    
 }
