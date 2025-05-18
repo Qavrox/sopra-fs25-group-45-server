@@ -812,6 +812,44 @@ public class GameService {
         return game;
     }
 
+    public synchronized void leaveGame(Long gameId, String userToken) {
+
+        // authenticate & resolve user
+        authenticator.checkTokenValidity(userToken);
+        User user = userRepository.findByToken(userToken);
+        if (user == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found");
+        }
+
+        // load game
+        Game game = gameRepository.findByid(gameId);
+        if (game == null || game.getStatus() == GameStatus.ARCHIVED) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found");
+        }
+
+        // locate the player instance that belongs to this user
+        Player playerToRemove = null;
+        for (Player p : game.getPlayers()) {
+            if (p.getUserId().equals(user.getId())) {
+                playerToRemove = p;
+                break;
+            }
+        }
+        if (playerToRemove == null) {
+            throw new ResponseStatusException(
+                HttpStatus.NOT_FOUND, "Player not part of this game");
+        }
+
+    // 4) remove player from game & DB
+    game.removePlayer(playerToRemove);
+    playerRepository.delete(playerToRemove);
+    playerRepository.flush();
+
+    // 5) persist updated game state
+    gameRepository.save(game);
+    gameRepository.flush();
+}
+
     public String getHandDescription(Player player, List<String> communityCards) {
         // Convert player's hand to Card objects
         List<Card> playerCards = new ArrayList<>();
