@@ -15,6 +15,10 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+import ch.uzh.ifi.hase.soprafs24.service.UserFriendsService; // Added import
+import java.util.Comparator; // Added import
+import java.util.stream.Collectors; // Added import
+
 /**
  * GameHistoryService
  * This class is the "worker" and responsible for all functionality related to game history
@@ -26,13 +30,16 @@ public class GameHistoryService {
 
     private final GameHistoryRepository gameHistoryRepository;
     private final UserRepository userRepository;
+    private final UserFriendsService userFriendsService; // Added UserFriendsService
 
     @Autowired
     public GameHistoryService(
             @Qualifier("gameHistoryRepository") GameHistoryRepository gameHistoryRepository,
-            @Qualifier("userRepository") UserRepository userRepository) {
+            @Qualifier("userRepository") UserRepository userRepository,
+            UserFriendsService userFriendsService) { // Added UserFriendsService to constructor
         this.gameHistoryRepository = gameHistoryRepository;
         this.userRepository = userRepository;
+        this.userFriendsService = userFriendsService; // Initialize UserFriendsService
     }
 
     /**
@@ -195,6 +202,87 @@ public class GameHistoryService {
             entry.setGamesPlayed(user.getGamesPlayed());
             entry.setRank(rank++);
             
+            leaderboard.add(entry);
+        }
+        
+        return leaderboard;
+    }
+
+    /**
+     * Get friend leaderboard by total winnings
+     * @param currentUserId - ID of the current user
+     * @return list of LeaderboardEntryDTO for friends sorted by total winnings
+     */
+    public List<LeaderboardEntryDTO> getFriendLeaderboardByWinnings(Long currentUserId) {
+        User currentUser = userRepository.findByid(currentUserId);
+        if (currentUser == null) {
+            throw new IllegalArgumentException("Current user not found");
+        }
+
+        List<User> friends = userFriendsService.getFriends(currentUserId);
+        // Also include the current user in their own friend leaderboard
+        if (friends.stream().noneMatch(friend -> friend.getId().equals(currentUserId))) {
+            friends.add(currentUser);
+        }
+        
+        List<LeaderboardEntryDTO> leaderboard = new ArrayList<>();
+        
+        // Sort friends by total winnings
+        friends.sort(Comparator.comparing(User::getTotalWinnings, Comparator.nullsLast(Comparator.reverseOrder())));
+        
+        long rank = 1;
+        for (User user : friends) {
+            LeaderboardEntryDTO entry = new LeaderboardEntryDTO();
+            entry.setUserId(user.getId());
+            entry.setUsername(user.getUsername());
+            entry.setDisplayName(user.getName());
+            entry.setWinRate(user.getWinRate());
+            entry.setTotalWinnings(user.getTotalWinnings() != null ? user.getTotalWinnings() : 0L);
+            entry.setGamesPlayed(user.getGamesPlayed() != null ? user.getGamesPlayed() : 0L);
+            entry.setRank(rank++);
+            leaderboard.add(entry);
+        }
+        
+        return leaderboard;
+    }
+
+    /**
+     * Get friend leaderboard by win rate
+     * @param currentUserId - ID of the current user
+     * @return list of LeaderboardEntryDTO for friends sorted by win rate
+     */
+    public List<LeaderboardEntryDTO> getFriendLeaderboardByWinRate(Long currentUserId) {
+        User currentUser = userRepository.findByid(currentUserId);
+        if (currentUser == null) {
+            throw new IllegalArgumentException("Current user not found");
+        }
+
+        List<User> friends = userFriendsService.getFriends(currentUserId);
+         // Also include the current user in their own friend leaderboard
+        if (friends.stream().noneMatch(friend -> friend.getId().equals(currentUserId))) {
+            friends.add(currentUser);
+        }
+
+        // Filter friends who have played at least 1 game
+        List<User> eligibleFriends = friends.stream()
+            .filter(user -> user.getGamesPlayed() != null && user.getGamesPlayed() >= 1L)
+            .collect(Collectors.toList());
+
+        List<LeaderboardEntryDTO> leaderboard = new ArrayList<>();
+        
+        // Sort eligible friends by win rate
+        eligibleFriends.sort(Comparator.comparing(User::getWinRate, Comparator.nullsLast(Comparator.reverseOrder())));
+        
+        long rank = 1;
+        for (User user : eligibleFriends) {
+            LeaderboardEntryDTO entry = new LeaderboardEntryDTO();
+            entry.setUserId(user.getId());
+            entry.setUsername(user.getUsername());
+            entry.setDisplayName(user.getName());
+            entry.setWinRate(user.getWinRate());
+            entry.setTotalWinnings(user.getTotalWinnings() != null ? user.getTotalWinnings() : 0L);
+            entry.setGamesPlayed(user.getGamesPlayed());
+            entry.setRank(rank++);
             leaderboard.add(entry);
         }
         

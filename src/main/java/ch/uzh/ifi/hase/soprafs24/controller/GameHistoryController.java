@@ -150,4 +150,44 @@ public class GameHistoryController {
         // Get leaderboard
         return gameHistoryService.getLeaderboardByWinRate();
     }
+
+    /**
+     * Get friend leaderboard by winnings
+     * @param token - authentication token
+     * @return list of LeaderboardEntryDTO
+     */
+    @GetMapping("/leaderboard/friends/winnings")
+    @ResponseStatus(HttpStatus.OK)
+    public List<LeaderboardEntryDTO> getFriendLeaderboardByWinnings(
+            @RequestHeader("Authorization") String token) {
+        
+        // Validate user authentication
+        User requestingUser = userService.getUserByToken(token);
+        if (requestingUser == null) {
+             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not authenticated");
+        }
+        
+        // Get friend leaderboard
+        return gameHistoryService.getFriendLeaderboardByWinnings(requestingUser.getId());
+    }
+
+    /**
+     * Get friend leaderboard by win rate
+     * @param token - authentication token
+     * @return list of LeaderboardEntryDTO
+     */
+    @GetMapping("/leaderboard/friends/winrate")
+    @ResponseStatus(HttpStatus.OK)
+    public List<LeaderboardEntryDTO> getFriendLeaderboardByWinRate(
+            @RequestHeader("Authorization") String token) {
+        
+        // Validate user authentication
+        User requestingUser = userService.getUserByToken(token);
+        if (requestingUser == null) {
+             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not authenticated");
+        }
+        
+        // Get friend leaderboard
+        return gameHistoryService.getFriendLeaderboardByWinRate(requestingUser.getId());
+    }
 }

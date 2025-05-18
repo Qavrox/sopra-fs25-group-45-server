@@ -55,10 +55,12 @@ public class GameService {
     public GameService(@Qualifier("gameRepository") GameRepository gameRepository,
                        @Qualifier("userRepository") UserRepository userRepository, 
                        @Qualifier("playerRepository") PlayerRepository playerRepository,
+                       GameHistoryService gameHistoryService,
                        SecretManagerHelper secretManagerHelper) {
         this.gameRepository = gameRepository;
         this.userRepository = userRepository;
         this.playerRepository = playerRepository;
+        this.gameHistoryService = gameHistoryService;
         this.authenticator = new Authenticator(userRepository, gameRepository);
         this.restTemplate = new RestTemplate();
         this.secretManagerHelper = secretManagerHelper;
