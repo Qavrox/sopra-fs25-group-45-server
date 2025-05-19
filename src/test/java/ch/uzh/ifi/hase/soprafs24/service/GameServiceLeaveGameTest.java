@@ -47,7 +47,6 @@ public class GameServiceLeaveGameTest {
     public void setup() throws Exception {
         MockitoAnnotations.openMocks(this);
 
-        // 手动 new GameService，因为构造函数不能改
         gameService = new GameService(
             gameRepository,
             userRepository,
@@ -56,7 +55,6 @@ public class GameServiceLeaveGameTest {
             secretManagerHelper
         );
 
-        // 使用反射注入 mock 的 authenticator
         Field authField = GameService.class.getDeclaredField("authenticator");
         authField.setAccessible(true);
         authField.set(gameService, authenticator);
