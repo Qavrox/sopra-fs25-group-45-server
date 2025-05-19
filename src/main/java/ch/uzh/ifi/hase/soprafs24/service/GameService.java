@@ -842,15 +842,15 @@ public class GameService {
                 HttpStatus.NOT_FOUND, "Player not part of this game");
         }
 
-    // 4) remove player from game & DB
-    game.removePlayer(playerToRemove);
-    playerRepository.delete(playerToRemove);
-    playerRepository.flush();
+        // remove player from game & DB
+        game.removePlayer(playerToRemove);
+        playerRepository.delete(playerToRemove);
+        playerRepository.flush();
 
-    // 5) persist updated game state
-    gameRepository.save(game);
-    gameRepository.flush();
-}
+        // persist updated game state
+        gameRepository.save(game);
+        gameRepository.flush();
+    }
 
     public String getHandDescription(Player player, List<String> communityCards) {
         // Convert player's hand to Card objects
