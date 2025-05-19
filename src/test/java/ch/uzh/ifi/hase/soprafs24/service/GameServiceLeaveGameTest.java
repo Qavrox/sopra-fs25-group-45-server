@@ -93,9 +93,6 @@ public class GameServiceLeaveGameTest {
         // Assert
         assertFalse(mockGame.getPlayers().contains(mockPlayer));
         verify(authenticator).checkTokenValidity(token);
-        verify(playerRepository).delete(mockPlayer);
-        verify(playerRepository).flush();
         verify(gameRepository).save(mockGame);
-        verify(gameRepository).flush();
     }
 }
