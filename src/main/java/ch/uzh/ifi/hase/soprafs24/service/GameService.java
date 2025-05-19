@@ -844,8 +844,7 @@ public class GameService {
 
         // remove player from game & DB
         game.removePlayer(playerToRemove);
-        playerRepository.delete(playerToRemove);
-        playerRepository.flush();
+        
 
         // persist updated game state
         gameRepository.save(game);
