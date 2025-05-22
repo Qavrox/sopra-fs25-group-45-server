@@ -24,6 +24,7 @@ public class GameCreationPostDTOTest {
         // Set values
         dto.setCreatorId(creatorId);
         dto.setPassword(password);
+        dto.setPublic(isPublic);
         dto.setMaximalPlayers(maximalPlayers);
         dto.setStartCredit(startCredit);
         dto.setSmallBlind(smallBlind);
