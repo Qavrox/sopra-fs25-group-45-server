@@ -33,6 +33,11 @@ public class UserFriends implements Serializable {
 
     public void setUser(User user) {
         this.user = user;
+        if (user != null) {
+            this.userID = user.getId();
+        } else {
+            this.userID = null;
+        }
     }
 
     // Friend Requests: using a join table to map the relationship.

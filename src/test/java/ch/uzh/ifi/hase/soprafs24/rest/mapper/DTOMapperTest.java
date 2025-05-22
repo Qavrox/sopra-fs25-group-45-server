@@ -233,6 +233,7 @@ public class DTOMapperTest {
     assertEquals(gameHistory.getOtherPlayerIds(), gameHistoryDTO.getOtherPlayerIds());
     assertEquals(gameHistory.getPlayedAt(), gameHistoryDTO.getPlayedAt());
   }
+  
   @Test
   public void testGameHistoryfromGameHistoryDTOtoEntity() {
     //given GameHistoryDTO
@@ -283,6 +284,6 @@ public class DTOMapperTest {
     GameHistoryDTO convertEntityToGameHistoryDTO(GameHistory gameHistory); DONE
 
    
-    GameHistory convertGameHistoryDTOtoEntity(GameHistoryDTO gameHistoryDTO);
+    GameHistory convertGameHistoryDTOtoEntity(GameHistoryDTO gameHistoryDTO); DONE
 }
     */
