@@ -24,7 +24,7 @@ public class GameCreationPostDTOTest {
         // Set values
         dto.setCreatorId(creatorId);
         dto.setPassword(password);
-        dto.setPublic(isPublic); // Assuming setter is setPublic
+        dto.setPublic(isPublic);
         dto.setMaximalPlayers(maximalPlayers);
         dto.setStartCredit(startCredit);
         dto.setSmallBlind(smallBlind);
@@ -33,8 +33,6 @@ public class GameCreationPostDTOTest {
         // Assert values using getters
         assertEquals(creatorId, dto.getCreatorId(), "CreatorId should match the set value.");
         assertEquals(password, dto.getPassword(), "Password should match the set value.");
-        // Assuming getter is isPublic() or getIsPublic() - standard for boolean is isPublic()
-        // If your DTO uses getIsPublic(), change the assertion accordingly.
         assertEquals(isPublic, dto.getIsPublic(), "isPublic flag should match the set value.");
         assertEquals(maximalPlayers, dto.getMaximalPlayers(), "MaximalPlayers should match the set value.");
         assertEquals(startCredit, dto.getStartCredit(), "StartCredit should match the set value.");
@@ -49,8 +47,6 @@ public class GameCreationPostDTOTest {
         // Assert default values
         assertNull(dto.getCreatorId(), "Default CreatorId should be null.");
         assertNull(dto.getPassword(), "Default Password should be null.");
-        // Assuming isPublic is a boolean primitive, its default is false.
-        // If it's a Boolean object, its default would be null.
         assertFalse(dto.getIsPublic(), "Default isPublic should be false.");
         assertEquals(0, dto.getMaximalPlayers(), "Default MaximalPlayers should be 0 for int.");
         assertEquals(0, dto.getStartCredit(), "Default StartCredit should be 0 for int.");
@@ -65,7 +61,6 @@ public class GameCreationPostDTOTest {
         // Set nullable fields to null
         dto.setCreatorId(null);
         dto.setPassword(null);
-        // boolean isPublic cannot be null. int fields cannot be null.
 
         // Assert that getters return null for nullable fields
         assertNull(dto.getCreatorId(), "CreatorId should be null after setting to null.");
