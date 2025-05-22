@@ -83,32 +83,4 @@ public class SecretManagerHelper {
             throw new RuntimeException("Failed to retrieve Gemini API key from Secret Manager", e);
         }
     }
-    
-    /**
-     * Gets any secret from Google Secret Manager by secret ID.
-     *
-     * @param secretId The ID of the secret to retrieve
-     * @return The secret value
-     * @throws RuntimeException if the secret cannot be retrieved
-     */
-    public String getSecret(String secretId) {
-        if ("local".equals(activeProfile)) {
-            throw new RuntimeException("Secret Manager is not available in local profile");
-        }
-        
-        try {
-            final String projectId = "702248203659";
-            
-            SecretVersionName secretVersionName = SecretVersionName.of(
-                projectId,
-                secretId,
-                "latest"
-            );
-            
-            AccessSecretVersionResponse response = secretManagerClient.accessSecretVersion(secretVersionName);
-            return response.getPayload().getData().toStringUtf8();
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to retrieve secret from Secret Manager: " + secretId, e);
-        }
-    }
 } 

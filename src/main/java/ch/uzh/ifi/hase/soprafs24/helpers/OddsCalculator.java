@@ -45,7 +45,12 @@ public class OddsCalculator {
             
             switch(category) {
                 case 8: // Straight flush
-                    sb.append("Straight Flush, ").append(rankNames[kickers.get(0) - 2]).append(" high");
+                    // Special case for Royal Flush (Ace-high straight flush)
+                    if (kickers.get(0) == 14) {
+                        sb.append("Royal Flush");
+                    } else {
+                        sb.append("Straight Flush, ").append(rankNames[kickers.get(0) - 2]).append(" high");
+                    }
                     break;
                 case 7: // Four of a kind
                     sb.append("Four of a Kind, ").append(rankNames[kickers.get(0) - 2]).append("s");
