@@ -268,6 +268,8 @@ public class GameService {
         game.setCurrentPlayerIndex(0);
         game.setLastRaisePlayerIndex(-1);
 
+        game.rotateBlinds();
+
         // Reset player states while preserving credits
         for (Player player : game.getPlayers()) {
             player.setHand(new ArrayList<>());
