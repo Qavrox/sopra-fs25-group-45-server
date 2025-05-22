@@ -38,6 +38,18 @@ public class GameRoomController {
         return newGameGetDTO;
     }
 
+    @PostMapping("/games/{gameId}/newround")
+    @ResponseStatus(HttpStatus.CREATED)
+    @ResponseBody
+    public GameGetDTO startNewRound(@RequestHeader("Authorization") String authenticatorToken, @PathVariable("gameId") Long id){
+
+        String token = authenticatorToken.substring(7);
+        Game newGame = gameService.startRound(id, token);
+        GameGetDTO newGameGetDTO = DTOMapper.INSTANCE.convertEntityToGameGetDTO(newGame);
+
+        return newGameGetDTO;
+    }
+
     @GetMapping("/games")
     @ResponseStatus(HttpStatus.OK)
     @ResponseBody
@@ -96,6 +108,7 @@ public class GameRoomController {
     String token = authenticatorToken.substring(7); // strip “Bearer ”
     gameService.leaveGame(id, token);
 }
+
 
 
     
