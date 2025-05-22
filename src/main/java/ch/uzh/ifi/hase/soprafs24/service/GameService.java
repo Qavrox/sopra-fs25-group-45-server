@@ -828,6 +828,9 @@ public class GameService {
         if (game == null || game.getStatus() == GameStatus.ARCHIVED) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found");
         }
+        if (game.getStatus() != GameStatus.GAMEOVER){
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You are not allowed to leave game at this phase"); //New condition added 
+        }
 
         // locate the player instance that belongs to this user
         Player playerToRemove = null;

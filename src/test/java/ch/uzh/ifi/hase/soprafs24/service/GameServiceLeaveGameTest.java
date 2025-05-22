@@ -95,4 +95,5 @@ public class GameServiceLeaveGameTest {
         verify(authenticator).checkTokenValidity(token);
         verify(gameRepository).save(mockGame);
     }
+    
 }
