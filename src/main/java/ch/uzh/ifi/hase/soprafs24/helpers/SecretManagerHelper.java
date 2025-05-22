@@ -3,13 +3,17 @@ package ch.uzh.ifi.hase.soprafs24.helpers;
 import com.google.cloud.secretmanager.v1.AccessSecretVersionResponse;
 import com.google.cloud.secretmanager.v1.SecretManagerServiceClient;
 import com.google.cloud.secretmanager.v1.SecretVersionName;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import java.io.IOException;
 
 @Component
+@Qualifier("secretManagerHelper")
+@Profile("prod") // Only activate in prod profile
 public class SecretManagerHelper {
     
     private static final String GEMINI_API_KEY_SECRET_ID = "gemini-api-key";
