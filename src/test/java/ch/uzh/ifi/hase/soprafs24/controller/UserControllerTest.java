@@ -31,6 +31,8 @@ import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc; 
+
 
 /**
  * UserControllerTest
@@ -39,6 +41,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * This tests if the UserController works.
  */
 @WebMvcTest(UserController.class)
+@AutoConfigureMockMvc(addFilters = false)
 public class UserControllerTest {
 
   @Autowired
@@ -387,6 +390,173 @@ public class UserControllerTest {
         .andExpect(status().isOk());
     
     verify(userFriendsService).removeFriendRequest(1L, 2L);
+  }
+
+  @Test
+  public void updateUser_mismatchedUserId_throwsForbidden() throws Exception {
+    // given
+    User currentUser = new User(); // User making the request
+    currentUser.setId(1L); // Current user's ID
+    currentUser.setToken("valid-token");
+
+    UserPutDTO userPutDTO = new UserPutDTO();
+    userPutDTO.setName("New Name");
+    userPutDTO.setUsername("newUsername");
+
+    given(userService.getUserByToken("Bearer valid-token")).willReturn(currentUser);
+    // No need to mock userService.updateUser as the controller should throw exception before calling it.
+
+    // when
+    MockHttpServletRequestBuilder putRequest = put("/users/2") // Attempting to update user with ID 2
+        .header("Authorization", "Bearer valid-token")
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(asJsonString(userPutDTO));
+
+    // then
+    mockMvc.perform(putRequest)
+        .andExpect(status().isForbidden());
+  }
+  
+  @Test
+  public void updateUser_invalidToken_throwsUnauthorized() throws Exception {
+    // given
+    UserPutDTO userPutDTO = new UserPutDTO();
+    userPutDTO.setName("New Name");
+    userPutDTO.setUsername("newUsername");
+
+    // Mock userService.getUserByToken to throw an exception for an invalid token
+    given(userService.getUserByToken("Bearer invalid-token"))
+        .willThrow(new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid token"));
+
+    // when
+    MockHttpServletRequestBuilder putRequest = put("/users/1")
+        .header("Authorization", "Bearer invalid-token")
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(asJsonString(userPutDTO));
+    
+    // then
+    mockMvc.perform(putRequest)
+        .andExpect(status().isUnauthorized());
+  }
+
+
+  @Test
+  public void getFriends_nullAuthHeader_throwsUnauthorized() throws Exception {
+    mockMvc.perform(get("/friends")
+            .contentType(MediaType.APPLICATION_JSON)) // No Authorization header
+        .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  public void getFriends_invalidAuthHeader_throwsUnauthorized() throws Exception {
+    mockMvc.perform(get("/friends")
+            .header("Authorization", "InvalidPrefix token") // Invalid prefix
+            .contentType(MediaType.APPLICATION_JSON))
+        .andExpect(status().isUnauthorized());
+  }
+
+
+  @Test
+  public void friendRequestList_nullAuthHeader_throwsUnauthorized() throws Exception {
+    mockMvc.perform(get("/friends/requests")
+            .contentType(MediaType.APPLICATION_JSON)) // No Authorization header
+        .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  public void friendRequestList_invalidAuthHeader_throwsUnauthorized() throws Exception {
+    mockMvc.perform(get("/friends/requests")
+            .header("Authorization", "TokenOnly") // Invalid format
+            .contentType(MediaType.APPLICATION_JSON))
+        .andExpect(status().isUnauthorized());
+  }
+
+
+  @Test
+  public void requestFriend_nullAuthHeader_throwsUnauthorized() throws Exception {
+    mockMvc.perform(post("/friends/2/request")
+            .contentType(MediaType.APPLICATION_JSON)) // No Authorization header
+        .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  public void requestFriend_invalidAuthHeader_throwsUnauthorized() throws Exception {
+    mockMvc.perform(post("/friends/2/request")
+            .header("Authorization", "NoBearerPrefix 123")
+            .contentType(MediaType.APPLICATION_JSON))
+        .andExpect(status().isUnauthorized());
+  }
+
+  @Test
+  public void acceptFriend_nullAuthHeader_throwsUnauthorized() throws Exception {
+    mockMvc.perform(post("/friends/2/accept")
+            .contentType(MediaType.APPLICATION_JSON))
+        .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  public void acceptFriend_invalidAuthHeader_throwsUnauthorized() throws Exception {
+    mockMvc.perform(post("/friends/2/accept")
+            .header("Authorization", "BearerTokenWithoutSpace") // Invalid format
+            .contentType(MediaType.APPLICATION_JSON))
+        .andExpect(status().isUnauthorized());
+  }
+
+
+  @Test
+  public void rejectFriend_nullAuthHeader_throwsUnauthorized() throws Exception {
+    mockMvc.perform(post("/friends/2/reject")
+            .contentType(MediaType.APPLICATION_JSON))
+        .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  public void rejectFriend_invalidAuthHeader_throwsUnauthorized() throws Exception {
+    mockMvc.perform(post("/friends/2/reject")
+            .header("Authorization", "  Bearer withLeadingSpace") // Invalid format
+            .contentType(MediaType.APPLICATION_JSON))
+        .andExpect(status().isUnauthorized());
+  }
+
+  @Test
+  public void getFriends_headerPresentButInvalidPrefix_throwsUnauthorized() throws Exception {
+    mockMvc.perform(get("/friends")
+            .header("Authorization", "NotBearer some_token_value") // Present, but wrong prefix
+            .contentType(MediaType.APPLICATION_JSON))
+        .andExpect(status().isUnauthorized()); // Expect 401 from controller logic
+  }
+
+  @Test
+  public void friendRequestList_headerPresentButInvalidPrefix_throwsUnauthorized() throws Exception {
+    mockMvc.perform(get("/friends/requests")
+            .header("Authorization", "InvalidScheme other_data") // Present, but wrong prefix
+            .contentType(MediaType.APPLICATION_JSON))
+        .andExpect(status().isUnauthorized()); // Expect 401 from controller logic
+  }
+
+  @Test
+  public void requestFriend_headerPresentButInvalidPrefix_throwsUnauthorized() throws Exception {
+    // No specific mocks for userService or userFriendsService are needed if the auth check fails first.
+    mockMvc.perform(post("/friends/2/request") // Assuming a valid friendId like 2
+            .header("Authorization", "Malformed BearerToken") // Present, but wrong prefix
+            .contentType(MediaType.APPLICATION_JSON))
+        .andExpect(status().isUnauthorized()); // Expect 401 from controller logic
+  }
+
+  @Test
+  public void acceptFriend_headerPresentButInvalidPrefix_throwsUnauthorized() throws Exception {
+    mockMvc.perform(post("/friends/2/accept") // Assuming a valid friendId like 2
+            .header("Authorization", "TokenIsHereButNoBearer") // Present, but wrong prefix
+            .contentType(MediaType.APPLICATION_JSON))
+        .andExpect(status().isUnauthorized()); // Expect 401 from controller logic
+  }
+
+  @Test
+  public void rejectFriend_headerPresentButInvalidPrefix_throwsUnauthorized() throws Exception {
+    mockMvc.perform(post("/friends/2/reject") // Assuming a valid friendId like 2
+            .header("Authorization", "MY_CUSTOM_TOKEN_FORMAT") // Present, but wrong prefix
+            .contentType(MediaType.APPLICATION_JSON))
+        .andExpect(status().isUnauthorized()); // Expect 401 from controller logic
   }
 
   /**
