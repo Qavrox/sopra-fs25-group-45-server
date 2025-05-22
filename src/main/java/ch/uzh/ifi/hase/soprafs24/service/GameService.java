@@ -221,7 +221,7 @@ public class GameService {
         List<Game> publicGames = new ArrayList<>();
 
         for (Game game : allGames) {
-            if (game.getIsPublic()) {
+            if (game.getIsPublic() && game.getGameStatus() != GameStatus.ARCHIVED) {
                 publicGames.add(game);
             }
         }
@@ -1104,7 +1104,7 @@ public class GameService {
         authenticator.checkTokenValidity(token);
         
         // Get statistics from the service
-        return gameHistoryService.getUserStatistics(userId);
+        return gameHistoryService.getUserStatistics(userId,null,null);
     }
     
     /**
