@@ -704,7 +704,31 @@ public class GameService {
         List<Player> winners = new ArrayList<>();
         OddsCalculator.HandValue bestHandValue = null;
 
+        // Count active players (not folded)
+        int activePlayers = 0;
         for (Player player : players) {
+            if (!player.getHasFolded()) {
+                activePlayers++;
+            }
+        }
+
+        // If only one player is active, they are the winner
+        if (activePlayers == 1) {
+            for (Player player : players) {
+                if (!player.getHasFolded()) {
+                    winners.add(player);
+                    game.setWinners(winners);
+                    return winners;
+                }
+            }
+        }
+
+        for (Player player : players) {
+            // Skip players who have folded
+            if (player.getHasFolded()) {
+                continue;
+            }
+
             // Convert player's hand to Card objects
             List<Card> playerCards = new ArrayList<>();
             for (String cardStr : player.getHand()) {

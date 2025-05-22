@@ -1357,5 +1357,239 @@ public class GameServiceTest {
         assertTrue(winners.stream().anyMatch(p -> p.getUserId() == 3L));
         assertTrue(winners.stream().anyMatch(p -> p.getUserId() == 4L));
     }
+
+    @Test
+    public void testDetermineWinnersExcludesFoldedPlayers() {
+        // Setup game with 4 players where one has folded
+        Game testGame = new Game();
+        testGame.setId(16L);
+        testGame.setGameStatus(GameStatus.RIVER);
+        testGame.setPot(400L);
+        
+        // Set up community cards
+        List<String> communityCards = Arrays.asList("AS", "KS", "QS", "JS", "2H");
+        testGame.setCommunityCards(communityCards);
+        
+        // Add 4 players with different hands
+        List<Player> testPlayers = new ArrayList<>();
+        
+        // Royal flush player (but folded!)
+        Player player1 = new Player(1L, Arrays.asList("10S", "9S"), testGame);
+        player1.setCredit(500L);
+        player1.setHasFolded(true); // This player folded
+        
+        // Straight flush player
+        Player player2 = new Player(2L, Arrays.asList("10S", "9S"), testGame);
+        player2.setCredit(500L);
+        player2.setHasFolded(false);
+        
+        // Three of a kind
+        Player player3 = new Player(3L, Arrays.asList("AH", "AD"), testGame);
+        player3.setCredit(500L);
+        player3.setHasFolded(false);
+        
+        // Two pair
+        Player player4 = new Player(4L, Arrays.asList("KH", "KD"), testGame);
+        player4.setCredit(500L);
+        player4.setHasFolded(false);
+        
+        testPlayers.add(player1);
+        testPlayers.add(player2);
+        testPlayers.add(player3);
+        testPlayers.add(player4);
+        testGame.setPlayers(testPlayers);
+
+        // Mock repository behavior
+        when(gameRepository.findByid(16L)).thenReturn(testGame);
+        when(gameRepository.save(any(Game.class))).thenReturn(testGame);
+        
+        // Determine the winner
+        List<Player> winners = gameService.determineWinners(16L);
+        
+        // Verify player1 with the royal flush is NOT the winner because they folded
+        // Instead, player2 with the straight flush should win
+        assertEquals(1, winners.size());
+        assertEquals(2L, winners.get(0).getUserId());
+        
+        // Verify folded player is not in winners list
+        assertFalse(winners.stream().anyMatch(p -> p.getUserId() == 1L));
+    }
+    
+    @Test
+    public void testDetermineWinnersWithMultipleActivePlayers() {
+        // Setup game with 5 players where 2 have folded
+        Game testGame = new Game();
+        testGame.setId(17L);
+        testGame.setGameStatus(GameStatus.RIVER);
+        testGame.setPot(500L);
+        
+        // Set up community cards
+        List<String> communityCards = Arrays.asList("AS", "KS", "QS", "JS", "2H");
+        testGame.setCommunityCards(communityCards);
+        
+        List<Player> testPlayers = new ArrayList<>();
+        
+        // Player 1 - folded
+        Player player1 = new Player(1L, Arrays.asList("AH", "KH"), testGame);
+        player1.setCredit(500L);
+        player1.setHasFolded(true);
+        
+        // Player 2 - active with straight flush
+        Player player2 = new Player(2L, Arrays.asList("10S", "9S"), testGame);
+        player2.setCredit(500L);
+        player2.setHasFolded(false);
+        
+        // Player 3 - active with three of a kind
+        Player player3 = new Player(3L, Arrays.asList("AH", "AD"), testGame);
+        player3.setCredit(500L);
+        player3.setHasFolded(false);
+        
+        // Player 4 - folded
+        Player player4 = new Player(4L, Arrays.asList("KH", "KD"), testGame);
+        player4.setCredit(500L);
+        player4.setHasFolded(true);
+        
+        // Player 5 - active with four of a kind
+        Player player5 = new Player(5L, Arrays.asList("AC", "AH"), testGame);
+        player5.setCredit(500L);
+        player5.setHasFolded(false);
+        
+        testPlayers.add(player1);
+        testPlayers.add(player2);
+        testPlayers.add(player3);
+        testPlayers.add(player4);
+        testPlayers.add(player5);
+        testGame.setPlayers(testPlayers);
+
+        when(gameRepository.findByid(17L)).thenReturn(testGame);
+        when(gameRepository.save(any(Game.class))).thenReturn(testGame);
+        
+        // Determine the winners
+        List<Player> winners = gameService.determineWinners(17L);
+        
+        // Verify that only active players are considered
+        assertEquals(1, winners.size());
+        assertEquals(2L, winners.get(0).getUserId());
+        
+        // Verify folded players are not in winners list
+        assertFalse(winners.stream().anyMatch(p -> p.getUserId() == 1L));
+        assertFalse(winners.stream().anyMatch(p -> p.getUserId() == 4L));
+    }
+    
+    @Test
+    public void testHandDescriptionCorrectness() {
+        // Test that hand descriptions match expected values
+        Game testGame = new Game();
+        testGame.setId(18L);
+        
+        // Set up community cards for a royal flush
+        List<String> communityCards = Arrays.asList("AS", "KS", "QS", "JS", "10S");
+        
+        // Create a player with any two cards (royal flush is on the board)
+        Player player = new Player(1L, Arrays.asList("2H", "3H"), testGame);
+        
+        // Mock repository
+        when(gameRepository.findByid(18L)).thenReturn(testGame);
+        
+        // Get hand description
+        String handDescription = gameService.getHandDescription(player, communityCards);
+        
+        // Verify correct description
+        assertEquals("Royal Flush", handDescription);
+        
+        // Test another scenario - Full House
+        List<String> fullHouseBoard = Arrays.asList("AS", "AD", "AC", "KS", "KH");
+        String fullHouseDescription = gameService.getHandDescription(player, fullHouseBoard);
+        assertEquals("Full House, Aces full of Kings", fullHouseDescription);
+    }
+    
+    @Test
+    public void testOnlyOnePlayerRemainsActive() {
+        // Setup game with 3 players where 2 have folded
+        Game testGame = new Game();
+        testGame.setId(19L);
+        testGame.setGameStatus(GameStatus.RIVER);
+        testGame.setPot(300L);
+        
+        // Set up community cards
+        List<String> communityCards = Arrays.asList("AS", "KS", "QS", "JS", "10S");
+        testGame.setCommunityCards(communityCards);
+        
+        List<Player> testPlayers = new ArrayList<>();
+        
+        // Player 1 - folded
+        Player player1 = new Player(1L, Arrays.asList("AH", "KH"), testGame);
+        player1.setCredit(500L);
+        player1.setHasFolded(true);
+        
+        // Player 2 - only active player
+        Player player2 = new Player(2L, Arrays.asList("2C", "3C"), testGame);
+        player2.setCredit(500L);
+        player2.setHasFolded(false);
+        
+        // Player 3 - folded
+        Player player3 = new Player(3L, Arrays.asList("AH", "AD"), testGame);
+        player3.setCredit(500L);
+        player3.setHasFolded(true);
+        
+        testPlayers.add(player1);
+        testPlayers.add(player2);
+        testPlayers.add(player3);
+        testGame.setPlayers(testPlayers);
+
+        when(gameRepository.findByid(19L)).thenReturn(testGame);
+        when(gameRepository.save(any(Game.class))).thenReturn(testGame);
+        
+        // Determine the winners
+        List<Player> winners = gameService.determineWinners(19L);
+        
+        // Verify that the only active player is the winner
+        assertEquals(1, winners.size());
+        assertEquals(2L, winners.get(0).getUserId());
+    }
+    
+    @Test
+    public void testDetermineWinnersConsistentResults() {
+        // Setup two identical games to ensure consistency
+        Game game1 = new Game();
+        game1.setId(20L);
+        game1.setGameStatus(GameStatus.RIVER);
+        
+        Game game2 = new Game();
+        game2.setId(21L);
+        game2.setGameStatus(GameStatus.RIVER);
+        
+        // Same community cards
+        List<String> communityCards = Arrays.asList("AS", "KS", "QS", "JS", "2H");
+        game1.setCommunityCards(communityCards);
+        game2.setCommunityCards(communityCards);
+        
+        // Same players with same hands
+        Player player1Game1 = new Player(1L, Arrays.asList("10S", "9S"), game1);
+        player1Game1.setHasFolded(false);
+        
+        Player player2Game1 = new Player(2L, Arrays.asList("AH", "AD"), game1);
+        player2Game1.setHasFolded(false);
+        
+        Player player1Game2 = new Player(1L, Arrays.asList("10S", "9S"), game2);
+        player1Game2.setHasFolded(false);
+        
+        Player player2Game2 = new Player(2L, Arrays.asList("AH", "AD"), game2);
+        player2Game2.setHasFolded(false);
+        
+        game1.setPlayers(Arrays.asList(player1Game1, player2Game1));
+        game2.setPlayers(Arrays.asList(player1Game2, player2Game2));
+        
+        when(gameRepository.findByid(20L)).thenReturn(game1);
+        when(gameRepository.findByid(21L)).thenReturn(game2);
+        
+        // Get winners for both games
+        List<Player> winners1 = gameService.determineWinners(20L);
+        List<Player> winners2 = gameService.determineWinners(21L);
+        
+        // Verify consistent results
+        assertEquals(winners1.size(), winners2.size());
+        assertEquals(winners1.get(0).getUserId(), winners2.get(0).getUserId());
+    }
 }
 
