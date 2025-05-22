@@ -442,6 +442,7 @@ public class GameServiceTest {
         assertEquals(games, publicGames);
     }
 
+    @Test
     void testgetAllPublicGamesInvalidToken(){
         // when
         assertThrows(ResponseStatusException.class, () -> {
@@ -939,32 +940,31 @@ public class GameServiceTest {
         });
     }
 
-
-    }
-
-
-
-
-
-    /*
     @Test
     void testJoinFullGame() {
         // Setup a game that is already full
         Game fullGame = new Game();
         fullGame.setId(6L);
-        fullGame.setCreatorId(1L);
+        fullGame.setCreatorId(1L); // Assuming user with ID 1L is the creator setup in @BeforeEach
         fullGame.setIsPublic(true);
         fullGame.setMaximalPlayers(3);
         fullGame.setStartCredit(1000L);
         fullGame.setGameStatus(GameStatus.READY);
         
-        List<Player> players = new ArrayList<>();
-        players.add(new Player(1L, new ArrayList<>(), fullGame));
-        players.add(new Player(2L, new ArrayList<>(), fullGame));
-        players.add(new Player(3L, new ArrayList<>(), fullGame)); // Game is full with 3 players
-        fullGame.setPlayers(players);
+        // Create mock players - ensure they are distinct and added to the game
+        List<Player> playersInFullGame = new ArrayList<>();
+        // It's better to mock Player objects or use real Player objects initialized correctly
+        // For simplicity, assuming Player constructor and setters work as expected.
+        Player p1 = new Player(1L, new ArrayList<>(), fullGame); p1.setId(101L);
+        Player p2 = new Player(2L, new ArrayList<>(), fullGame); p2.setId(102L);
+        Player p3 = new Player(3L, new ArrayList<>(), fullGame); p3.setId(103L);
+        playersInFullGame.add(p1);
+        playersInFullGame.add(p2);
+        playersInFullGame.add(p3);
+        fullGame.setPlayers(playersInFullGame);
         
         when(gameRepository.findByid(6L)).thenReturn(fullGame);
+        // Assuming 'user' is the one trying to join, and is setup in @BeforeEach
         when(userRepository.findByToken(user.getToken())).thenReturn(user);
         
         // Execute and verify
@@ -973,7 +973,7 @@ public class GameServiceTest {
         });
         
         assertTrue(exception.getMessage().contains("Game is full"));
-        verify(gameRepository, never()).save(any(Game.class));
+        verify(gameRepository, never()).save(any(Game.class)); // Game should not be saved if join fails
     }
-         */
+}
 
