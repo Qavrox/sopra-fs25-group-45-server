@@ -81,6 +81,9 @@ public class GameHistoryController {
         
         // Validate user authentication
         User requestingUser = userService.getUserByToken(token);
+        if (!requestingUser.getId().equals(userId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You can only view your own game history");
+        }
         
         // Parse dates
         LocalDateTime startDate = LocalDateTime.parse(startDateStr, DateTimeFormatter.ISO_DATE_TIME);
@@ -99,22 +102,54 @@ public class GameHistoryController {
     }
 
     /**
-     * Get user statistics
+     * Get user statistics, optionally filtered by a time range.
      * @param userId - ID of the user
      * @param token - authentication token
+     * @param startDateStr - Optional start date string (ISO format, e.g., "2023-01-01T00:00:00")
+     * @param endDateStr - Optional end date string (ISO format, e.g., "2023-01-31T23:59:59")
      * @return UserStatisticsDTO
      */
     @GetMapping("/users/{userId}/statistics")
     @ResponseStatus(HttpStatus.OK)
     public UserStatisticsDTO getUserStatistics(
             @PathVariable Long userId,
-            @RequestHeader("Authorization") String token) {
+            @RequestHeader("Authorization") String token,
+            @RequestParam(required = false) String startDateStr,
+            @RequestParam(required = false) String endDateStr) {
         
         // Validate user authentication
-        userService.getUserByToken(token);
+        User requestingUser = userService.getUserByToken(token);
+        if (!requestingUser.getId().equals(userId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You can only view your own statistics");
+        }
+        
+        LocalDateTime startDate = null;
+        LocalDateTime endDate = null;
+        
+        if (startDateStr != null && !startDateStr.isEmpty()) {
+            try {
+                startDate = LocalDateTime.parse(startDateStr, DateTimeFormatter.ISO_DATE_TIME);
+            } catch (Exception e) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid start date format. Please use ISO_DATE_TIME.");
+            }
+        }
+        
+        if (endDateStr != null && !endDateStr.isEmpty()) {
+            try {
+                endDate = LocalDateTime.parse(endDateStr, DateTimeFormatter.ISO_DATE_TIME);
+            } catch (Exception e) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid end date format. Please use ISO_DATE_TIME.");
+            }
+        }
+
+        // If only one date is provided, throw a BAD_REQUEST error.
+        // Both dates must be provided if a time range filter is intended.
+        if ((startDate != null && endDate == null) || (startDate == null && endDate != null)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Both startDate and endDate must be provided for a time range filter, or neither to get all-time statistics.");
+        }
         
         // Get statistics
-        return gameHistoryService.getUserStatistics(userId);
+        return gameHistoryService.getUserStatistics(userId, startDate, endDate);
     }
 
     /**
