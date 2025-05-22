@@ -12,6 +12,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId; // Import ZoneId
+import java.time.ZonedDateTime; // Import ZonedDateTime
 import java.util.ArrayList;
 import java.util.List;
 
@@ -61,7 +63,17 @@ public class GameHistoryService {
         GameHistory history = new GameHistory();
         history.setUserId(userId);
         history.setGameId(gameId);
-        history.setPlayedAt(LocalDateTime.now());
+
+        // Get current time in server's default timezone (e.g., Swiss time)
+        LocalDateTime localNow = LocalDateTime.now();
+        // Convert local time to ZonedDateTime in server's default timezone
+        ZonedDateTime localZonedNow = localNow.atZone(ZoneId.systemDefault());
+        // Convert to UTC
+        ZonedDateTime utcZonedNow = localZonedNow.withZoneSameInstant(ZoneId.of("UTC"));
+        // Get LocalDateTime representation of UTC time
+        LocalDateTime utcNow = utcZonedNow.toLocalDateTime();
+        
+        history.setPlayedAt(utcNow); // Save as UTC time
         history.setResult(result);
         history.setWinnings(winnings);
         history.setOtherPlayerIds(otherPlayerIds);
@@ -114,11 +126,13 @@ public class GameHistoryService {
     }
 
     /**
-     * Get statistics for a user
+     * Get statistics for a user, optionally filtered by a time range.
      * @param userId - ID of the user
+     * @param startDate - Optional start date of the range
+     * @param endDate - Optional end date of the range
      * @return UserStatisticsDTO with calculated statistics
      */
-    public UserStatisticsDTO getUserStatistics(Long userId) {
+    public UserStatisticsDTO getUserStatistics(Long userId, LocalDateTime startDate, LocalDateTime endDate) {
         // Get user
         User user = userRepository.findByid(userId);
         if (user == null) {
@@ -126,7 +140,12 @@ public class GameHistoryService {
         }
         
         // Get game history
-        List<GameHistory> history = gameHistoryRepository.findByUserId(userId);
+        List<GameHistory> history;
+        if (startDate != null && endDate != null) {
+            history = gameHistoryRepository.findByUserIdAndPlayedAtBetween(userId, startDate, endDate);
+        } else {
+            history = gameHistoryRepository.findByUserId(userId);
+        }
         
         // Calculate statistics
         long totalGames = history.size();

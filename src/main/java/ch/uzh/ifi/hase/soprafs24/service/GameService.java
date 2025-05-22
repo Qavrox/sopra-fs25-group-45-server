@@ -1104,7 +1104,7 @@ public class GameService {
         authenticator.checkTokenValidity(token);
         
         // Get statistics from the service
-        return gameHistoryService.getUserStatistics(userId);
+        return gameHistoryService.getUserStatistics(userId,null,null);
     }
     
     /**
