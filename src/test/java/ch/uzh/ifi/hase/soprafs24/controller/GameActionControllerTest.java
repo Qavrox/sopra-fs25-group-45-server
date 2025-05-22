@@ -460,6 +460,179 @@ public class GameActionControllerTest {
                 .andExpect(jsonPath("$.statistics.participationRate").value(2.0 / 3.0));
     }
 
+    @Test
+    public void startBettingRound_invalidToken() throws Exception {
+        // given
+        // userService.getUserByToken will return null for an invalid token
+        given(userService.getUserByToken("invalid-token-value")).willReturn(null);
+
+        // when/then
+        mockMvc.perform(MockMvcRequestBuilders.post("/games/1/start-betting")
+                .header("Authorization", "Bearer invalid-token-value")) // Token doesn't matter as much as mock setup
+                .andExpect(status().isUnauthorized());
+
+        verify(userService).getUserByToken("invalid-token-value");
+        verify(gameService, never()).getGameById(anyLong(), anyString()); // Should not proceed to get game
+        verify(gameService, never()).startBettingRound(anyLong()); // Should not start betting round
+    }
+
+    @Test
+    public void startBettingRound_gameNotFound() throws Exception {
+        // given
+        User user = new User();
+        user.setId(1L);
+        user.setToken("valid-token");
+
+        given(userService.getUserByToken("valid-token")).willReturn(user);
+        // gameService.getGameById will return null
+        given(gameService.getGameById(eq(1L), eq("valid-token"))).willReturn(null);
+
+        // when/then
+        mockMvc.perform(MockMvcRequestBuilders.post("/games/1/start-betting")
+                .header("Authorization", "Bearer valid-token"))
+                .andExpect(status().isNotFound());
+
+        verify(userService).getUserByToken("valid-token");
+        verify(gameService).getGameById(eq(1L), eq("valid-token"));
+        verify(gameService, never()).startBettingRound(anyLong()); // Should not start betting round
+    }
+
+    @Test
+    public void performPlayerAction_invalidToken() throws Exception {
+        // given
+        PlayerActionPostDTO actionDTO = new PlayerActionPostDTO();
+        actionDTO.setUserId(1L);
+        actionDTO.setAction(PlayerAction.CALL);
+        actionDTO.setAmount(10L);
+
+        given(userService.getUserByToken("invalid-token-value")).willReturn(null);
+
+        // when/then
+        mockMvc.perform(MockMvcRequestBuilders.post("/games/1/action")
+                .header("Authorization", "Bearer invalid-token-value")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(asJsonString(actionDTO)))
+                .andExpect(status().isUnauthorized());
+
+        verify(userService).getUserByToken("invalid-token-value");
+        verify(gameService, never()).getGameById(anyLong(), anyString());
+    }
+
+    @Test
+    public void performPlayerAction_gameNotFound() throws Exception {
+        // given
+        User user = new User();
+        user.setId(1L);
+        user.setToken("valid-token");
+
+        PlayerActionPostDTO actionDTO = new PlayerActionPostDTO();
+        actionDTO.setUserId(1L);
+        actionDTO.setAction(PlayerAction.CALL);
+        actionDTO.setAmount(10L);
+
+        given(userService.getUserByToken("valid-token")).willReturn(user);
+        given(gameService.getGameById(eq(1L), eq("valid-token"))).willReturn(null);
+
+        // when/then
+        mockMvc.perform(MockMvcRequestBuilders.post("/games/1/action")
+                .header("Authorization", "Bearer valid-token")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(asJsonString(actionDTO)))
+                .andExpect(status().isNotFound());
+
+        verify(userService).getUserByToken("valid-token");
+        verify(gameService).getGameById(eq(1L), eq("valid-token"));
+        verify(gameService, never()).processPlayerAction(anyLong(), anyLong(), any(PlayerAction.class), anyLong());
+    }
+
+    @Test
+    public void getPokerAdvice_invalidToken() throws Exception {
+        // given
+        given(userService.getUserByToken("invalid-token-value")).willReturn(null);
+
+        // when/then
+        mockMvc.perform(MockMvcRequestBuilders.get("/games/1/advice")
+                .header("Authorization", "Bearer invalid-token-value"))
+                .andExpect(status().isUnauthorized());
+
+        verify(userService).getUserByToken("invalid-token-value");
+        verify(gameService, never()).getGameById(anyLong(), anyString());
+    }
+
+    @Test
+    public void getPokerAdvice_gameNotFound() throws Exception {
+        // given
+        User user = new User();
+        user.setId(1L);
+        user.setToken("valid-token");
+
+        given(userService.getUserByToken("valid-token")).willReturn(user);
+        given(gameService.getGameById(eq(1L), eq("valid-token"))).willReturn(null);
+
+        // when/then
+        mockMvc.perform(MockMvcRequestBuilders.get("/games/1/advice")
+                .header("Authorization", "Bearer valid-token"))
+                .andExpect(status().isNotFound());
+
+        verify(userService).getUserByToken("valid-token");
+        verify(gameService).getGameById(eq(1L), eq("valid-token"));
+        verify(gameService, never()).getPokerAdvice(anyLong(), anyLong());
+    }
+
+    @Test
+    public void getGameResults_invalidToken() throws Exception {
+        // given
+        given(userService.getUserByToken("invalid-token-value")).willReturn(null);
+
+        // when/then
+        mockMvc.perform(MockMvcRequestBuilders.get("/games/1/results")
+                .header("Authorization", "Bearer invalid-token-value"))
+                .andExpect(status().isUnauthorized());
+
+        verify(userService).getUserByToken("invalid-token-value");
+        verify(gameService, never()).getGameById(anyLong(), anyString());
+    }
+
+    @Test
+    public void getGameResults_gameNotFound() throws Exception {
+        // given
+        User user = new User();
+        user.setId(1L);
+        user.setToken("valid-token");
+
+        given(userService.getUserByToken("valid-token")).willReturn(user);
+        given(gameService.getGameById(eq(1L), eq("valid-token"))).willReturn(null);
+
+        // when/then
+        mockMvc.perform(MockMvcRequestBuilders.get("/games/1/results")
+                .header("Authorization", "Bearer valid-token"))
+                .andExpect(status().isNotFound());
+
+        verify(userService).getUserByToken("valid-token");
+        verify(gameService).getGameById(eq(1L), eq("valid-token"));
+    }
+
+    @Test
+    public void getWinProbability_gameIsNullInController_throwsNotFound() throws Exception {
+        // given
+        User user = new User();
+        user.setId(1L);
+        user.setToken("valid-token");
+
+        given(userService.getUserByToken("valid-token")).willReturn(user);
+        // Ensure gameService.getGameById returns null to test the controller's null check
+        given(gameService.getGameById(eq(1L), eq("valid-token"))).willReturn(null);
+
+        // when/then
+        mockMvc.perform(MockMvcRequestBuilders.get("/games/1/probability")
+                .header("Authorization", "Bearer valid-token"))
+                .andExpect(status().isNotFound());
+
+        verify(userService).getUserByToken("valid-token");
+        verify(gameService).getGameById(eq(1L), eq("valid-token"));
+        verify(gameService, never()).calculateWinProbability(anyLong(), anyLong());
+    }
+
     // Helper method to convert objects to JSON string
     private String asJsonString(final Object obj) {
         try {

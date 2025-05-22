@@ -11,8 +11,10 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
+import org.springframework.web.server.ResponseStatusException;
 
 import static org.mockito.BDDMockito.given;
+import org.springframework.http.HttpStatus;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -20,6 +22,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString; 
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.times;
@@ -29,11 +34,14 @@ import ch.uzh.ifi.hase.soprafs24.constant.UserStatus;
 import ch.uzh.ifi.hase.soprafs24.entity.Game;
 import ch.uzh.ifi.hase.soprafs24.entity.User;
 import ch.uzh.ifi.hase.soprafs24.entity.Player;
+import ch.uzh.ifi.hase.soprafs24.rest.dto.GameCreationPostDTO;
 import ch.uzh.ifi.hase.soprafs24.service.GameService;
 import ch.uzh.ifi.hase.soprafs24.service.UserFriendsService;
 import ch.uzh.ifi.hase.soprafs24.service.UserService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.mockito.Mockito;
 import org.mockito.ArgumentMatchers;
+
 
 @WebMvcTest(GameRoomController.class)
 public class GameControllerTest {
@@ -49,6 +57,160 @@ public class GameControllerTest {
 
     @MockBean
     private UserFriendsService userFriendsService;
+
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
+    @Test
+    public void createAGame_validInput_gameCreated() throws Exception {
+        // given
+        GameCreationPostDTO gamePostDTO = new GameCreationPostDTO();
+        // Populate gamePostDTO with some values if needed for mapping,
+        // or rely on default Game entity creation from an empty DTO if that's the logic.
+        // For this test, the content of gamePostDTO isn't deeply inspected by the controller itself,
+        // but rather by the service via the mapped Game entity.
+        gamePostDTO.setCreatorId(1L); // Example field
+        gamePostDTO.setPublic(true);
+        gamePostDTO.setMaximalPlayers(4);
+
+
+        // Mock the gameService.createNewGame to simulate its behavior.
+        // The controller passes a Game entity (converted from DTO) to this service method.
+        // If the ID is set by the service and needed in the response, mock it accordingly.
+        doAnswer(invocation -> {
+            Game gameArg = invocation.getArgument(0);
+            gameArg.setId(123L); // Simulate setting an ID on the game entity
+            gameArg.setCreatorId(gamePostDTO.getCreatorId());
+            gameArg.setIsPublic(gamePostDTO.getIsPublic());
+            gameArg.setMaximalPlayers(gamePostDTO.getMaximalPlayers());
+            gameArg.setStatus(GameStatus.WAITING); // Default status
+            // Populate other fields if they are expected in the GameGetDTO response
+            return null; // createNewGame might be void or return the game
+        }).when(gameService).createNewGame(any(Game.class), eq("valid-token"));
+
+        MockHttpServletRequestBuilder postRequest = post("/games")
+                .header("Authorization", "Bearer valid-token")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(gamePostDTO));
+
+        // when / then
+        mockMvc.perform(postRequest)
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").value(123L))
+                .andExpect(jsonPath("$.creatorId").value(gamePostDTO.getCreatorId()))
+                .andExpect(jsonPath("$.isPublic").value(gamePostDTO.getIsPublic()))
+                .andExpect(jsonPath("$.maximalPlayers").value(gamePostDTO.getMaximalPlayers()))
+                .andExpect(jsonPath("$.gameStatus").value(GameStatus.WAITING.toString()));
+
+        verify(gameService, times(1)).createNewGame(any(Game.class), eq("valid-token"));
+    }
+
+    @Test
+    public void createAGame_serviceThrowsError_returnsErrorStatus() throws Exception {
+        // given
+        GameCreationPostDTO gamePostDTO = new GameCreationPostDTO();
+        // Populate as needed
+
+        // Simulate a scenario where gameService throws an exception (e.g., invalid token, user not found by service)
+        Mockito.doThrow(new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Service-level token validation failed"))
+               .when(gameService).createNewGame(any(Game.class), eq("invalid-token"));
+
+        MockHttpServletRequestBuilder postRequest = post("/games")
+                .header("Authorization", "Bearer invalid-token")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(gamePostDTO));
+
+        // when / then
+        mockMvc.perform(postRequest)
+                .andExpect(status().isUnauthorized()); // Or whatever status the service throws
+
+        verify(gameService, times(1)).createNewGame(any(Game.class), eq("invalid-token"));
+    }
+
+
+    // Tests for startNewRound
+    @Test
+    public void startNewRound_validInput_newRoundStarted() throws Exception {
+        // given
+        Long gameId = 1L;
+        String token = "valid-token";
+
+        Game gameAfterNewRound = new Game();
+        gameAfterNewRound.setId(gameId);
+        gameAfterNewRound.setStatus(GameStatus.PREFLOP); // Example status after new round
+        // Populate other fields of gameAfterNewRound as expected in the response
+
+        given(gameService.startRound(eq(gameId), eq(token))).willReturn(gameAfterNewRound);
+
+        MockHttpServletRequestBuilder postRequest = post("/games/{gameId}/newround", gameId)
+                .header("Authorization", "Bearer " + token);
+
+        // when / then
+        mockMvc.perform(postRequest)
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").value(gameId))
+                .andExpect(jsonPath("$.gameStatus").value(GameStatus.PREFLOP.toString()));
+
+        verify(gameService, times(1)).startRound(eq(gameId), eq(token));
+    }
+
+    @Test
+    public void startNewRound_invalidToken_throwsUnauthorized() throws Exception {
+        // given
+        Long gameId = 1L;
+        String invalidToken = "invalid-token";
+
+        given(gameService.startRound(eq(gameId), eq(invalidToken)))
+                .willThrow(new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid token provided"));
+
+        MockHttpServletRequestBuilder postRequest = post("/games/{gameId}/newround", gameId)
+                .header("Authorization", "Bearer " + invalidToken);
+
+        // when / then
+        mockMvc.perform(postRequest)
+                .andExpect(status().isUnauthorized());
+
+        verify(gameService, times(1)).startRound(eq(gameId), eq(invalidToken));
+    }
+
+    @Test
+    public void startNewRound_gameNotFound_throwsNotFound() throws Exception {
+        // given
+        Long gameId = 999L; // Non-existent game
+        String token = "valid-token";
+
+        given(gameService.startRound(eq(gameId), eq(token)))
+                .willThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found"));
+
+        MockHttpServletRequestBuilder postRequest = post("/games/{gameId}/newround", gameId)
+                .header("Authorization", "Bearer " + token);
+
+        // when / then
+        mockMvc.perform(postRequest)
+                .andExpect(status().isNotFound());
+
+        verify(gameService, times(1)).startRound(eq(gameId), eq(token));
+    }
+
+    @Test
+    public void startNewRound_gameServiceError_returnsErrorStatus() throws Exception {
+        // given
+        Long gameId = 1L;
+        String token = "valid-token";
+
+        // Example: Service throws BadRequest if game is not in a state to start a new round
+        given(gameService.startRound(eq(gameId), eq(token)))
+                .willThrow(new ResponseStatusException(HttpStatus.BAD_REQUEST, "Game not in correct state"));
+
+        MockHttpServletRequestBuilder postRequest = post("/games/{gameId}/newround", gameId)
+                .header("Authorization", "Bearer " + token);
+
+        // when / then
+        mockMvc.perform(postRequest)
+                .andExpect(status().isBadRequest());
+
+        verify(gameService, times(1)).startRound(eq(gameId), eq(token));
+    }
+
 
     @Test
     public void getAllPublicGamesValidTokenTest() throws Exception {
