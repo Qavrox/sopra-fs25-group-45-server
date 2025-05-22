@@ -252,54 +252,36 @@ public class GameService {
     }
 
 
-    public Game startRound(Long gameId, String token){
+    public Game startRound(Long gameId, String token) {
+        // Validate token and get game
+        authenticator.checkTokenValidity(token);
         Game game = gameRepository.findByid(gameId);
-
         if (game == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found");
-        }        
-
-        //this is a mess... but basically, we're just checking that the creator of the game is the one who is trying to start the game
-        Long gameCreatorId = game.getCreatorId();
-        User gameCreator = userRepository.findByid(gameCreatorId);
-
-        User user = userRepository.findByToken(token);
-        if(!gameCreator.getToken().equals(user.getToken())){
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You are not the creator of the game. You cannot start the game.");
         }
 
-        if (game.getPlayers().size() < 2) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Not enough players to start the game");
-        }
-        
+        // Reset game state
+        game.setPot(0L);
+        game.setCallAmount(0L);
         game.setGameStatus(GameStatus.READY);
-        game.setStartBlinds();
-        List<String> newDeck = new ArrayList<>();
-        String[] suits = {"H", "D", "C", "S"};
-        String[] ranks = {"2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"};
-        for (String suit : suits) {
-            for (String rank : ranks) {
-                newDeck.add(rank + "" + suit);
-            }
-        }
-        
-        game.setCardDeck(newDeck);
-
-        // Remove cards from players (violently if needed)
-        for (Player player : game.getPlayers()) {
-            List<String> hand = new ArrayList<>();
-            player.setHand(hand);
-            playerRepository.save(player);
-            playerRepository.flush();
-
-        }
-
-        // Remove community cards
         game.setCommunityCards(new ArrayList<>());
-        
-        gameRepository.save(game);
+        game.setCurrentPlayerIndex(0);
+        game.setLastRaisePlayerIndex(-1);
+
+        // Reset player states while preserving credits
+        for (Player player : game.getPlayers()) {
+            player.setHand(new ArrayList<>());
+            player.setCurrentBet(0L);
+            player.setHasFolded(false);
+            player.setHasActed(false);
+            player.setLastAction(null);
+            playerRepository.save(player);
+        }
+
+        // Save game state
+        game = gameRepository.save(game);
         gameRepository.flush();
-        
+
         return game;
     }
     

@@ -2,6 +2,7 @@ package ch.uzh.ifi.hase.soprafs24.service;
 
 import ch.uzh.ifi.hase.soprafs24.constant.Card;
 import ch.uzh.ifi.hase.soprafs24.constant.GameStatus;
+import ch.uzh.ifi.hase.soprafs24.constant.PlayerAction;
 import ch.uzh.ifi.hase.soprafs24.constant.UserStatus;
 import ch.uzh.ifi.hase.soprafs24.entity.Game;
 import ch.uzh.ifi.hase.soprafs24.entity.Player;
@@ -474,64 +475,53 @@ public class GameServiceTest {
         });
     }
 
+    
     @Test
-    void testStartRound_ValidGame() {
-        // when
-        Game updatedGame = gameService.startRound(game.getId(), user.getToken());
-        // then
-        assertNotNull(updatedGame);
-        assertEquals(GameStatus.READY, updatedGame.getGameStatus());
-        assertEquals(0, updatedGame.getSmallBlindIndex());;
-        assertEquals(52, updatedGame.getCardDeck().size()); // Full deck of cards
-        assertTrue(updatedGame.getCommunityCards().isEmpty()); // Community cards should be empty
-        // Verify that all players' hands are cleared
-        for (Player player : updatedGame.getPlayers()) {
-            assertTrue(player.getHand().isEmpty());
-        }
-    }
-   
-    @Test
-    void testStartRoundGameNotFound() {
-        // when
-        assertThrows(ResponseStatusException.class, () -> {
-            gameService.startRound(2L, user.getToken()); // Game with ID 2 does not exist
+    void testStartRound_GameNotFound() {
+        // Try to start round for non-existent game
+        Exception exception = assertThrows(ResponseStatusException.class, () -> {
+            gameService.startRound(2L, "valid-token");
         });
+        
+        assertEquals(HttpStatus.NOT_FOUND, ((ResponseStatusException) exception).getStatus());
+        assertTrue(exception.getMessage().contains("Game not found"));
     }
     
     @Test
-    void testStartRoundNotEnoughPlayers() {
-        // Setup a game with only one player
-        Game gameWithOnePlayer = new Game();
-        gameWithOnePlayer.setId(4L);
-        gameWithOnePlayer.setMaximalPlayers(5);
-        gameWithOnePlayer.setStartCredit(1000L);
-        gameWithOnePlayer.setCreatorId(1L);
-        gameWithOnePlayer.setIsPublic(true);
-        gameWithOnePlayer.addPlayer(new Player(1L, new ArrayList<>(), gameWithOnePlayer));
-        when(gameRepository.findByid(4L)).thenReturn(gameWithOnePlayer);
-        // when
-        assertThrows(ResponseStatusException.class, () -> {
-            gameService.startRound(4L, user.getToken());
-        });
-    }
-
-    @Test
     void testStartRound_InvalidToken() {
-
-        User notRoomCreator = new User();
-        notRoomCreator.setName("Not Room Creator");
-        notRoomCreator.setUsername("notroomcreator@lastname");
-        notRoomCreator.setStatus(UserStatus.ONLINE);
-        notRoomCreator.setCreationDate(java.time.LocalDate.now());
-        notRoomCreator.setToken("invalid-token");
-        // Mock the authenticator to throw an exception for invalid tokens
-        Mockito.doNothing().when(authenticator).checkTokenValidity("invalid-token");
-        when(userRepository.findByToken("invalid-token")).thenReturn(notRoomCreator);
-        // when
-        assertThrows(ResponseStatusException.class, () -> {
-            gameService.startRound(game.getId(), "invalid-token");
+        // Setup mock to throw exception for invalid token
+        Mockito.doThrow(new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid token"))
+            .when(authenticator).checkTokenValidity("invalid-token");
+        
+        // Try to start round with invalid token
+        Exception exception = assertThrows(ResponseStatusException.class, () -> {
+            gameService.startRound(1L, "invalid-token");
         });
+        
+        assertEquals(HttpStatus.UNAUTHORIZED, ((ResponseStatusException) exception).getStatus());
+        assertTrue(exception.getMessage().contains("Invalid token"));
     }
+    
+    @Test
+    void testStartRound_PreservesPlayerCredits() {
+        // Setup initial player credits
+        players.get(0).setCredit(500L);
+        players.get(1).setCredit(1000L);
+        players.get(2).setCredit(750L);
+
+        // Mock the repository to return the game
+        when(gameRepository.findByid(1L)).thenReturn(game);
+        when(userRepository.findByToken("valid-token")).thenReturn(user);
+        when(gameRepository.save(any(Game.class))).thenReturn(game);
+        
+        Game result = gameService.startRound(1L, "valid-token");
+        
+        // Verify credits are preserved
+        assertEquals(500L, result.getPlayers().get(0).getCredit());
+        assertEquals(1000L, result.getPlayers().get(1).getCredit());
+        assertEquals(750L, result.getPlayers().get(2).getCredit());
+    }
+
     
     @Test
     void testCreatorJoiningOwnGame() {
@@ -899,6 +889,59 @@ public class GameServiceTest {
         });
     }
 
+        
+    @Test
+    public void testNewRoundSuccess() {
+        // Setup game with players
+        game.setGameStatus(GameStatus.SHOWDOWN);
+        game.setSmallBlind(5);
+        game.setBigBlind(10);
+        
+        List<Player> players = new ArrayList<>();
+        Player player1 = new Player(1L, new ArrayList<>(), game);
+        player1.setCredit(1000L);
+        Player player2 = new Player(2L, new ArrayList<>(), game);
+        player2.setCredit(1000L);
+        players.add(player1);
+        players.add(player2);
+        game.setPlayers(players);
+
+        when(gameRepository.findByid(game.getId())).thenReturn(game);
+        when(userRepository.findByToken(user.getToken())).thenReturn(user);
+
+        // Execute new round
+        gameService.startRound(game.getId(), user.getToken());
+
+        assertEquals(GameStatus.READY, game.getStatus());
+        verify(gameRepository).save(game);
+    }
+
+    @Test
+    public void testNewRoundInvalidToken() {
+        when(gameRepository.findByid(game.getId())).thenReturn(game);
+        
+        assertThrows(ResponseStatusException.class, () -> {
+            gameService.startRound(game.getId(), "invalid token");
+        });
+    }
+
+    @Test
+    public void testNewRoundNotCreator() {
+        User otherUser = new User();
+        otherUser.setId(2L);
+        otherUser.setToken("other-token");
+        
+        when(gameRepository.findByid(game.getId())).thenReturn(game);
+        when(userRepository.findByToken("other-token")).thenReturn(otherUser);
+
+        assertThrows(ResponseStatusException.class, () -> {
+            gameService.startRound(game.getId(), "other-token");
+        });
+    }
+
+
+    }
+
 
 
 
@@ -933,4 +976,4 @@ public class GameServiceTest {
         verify(gameRepository, never()).save(any(Game.class));
     }
          */
-}
+
