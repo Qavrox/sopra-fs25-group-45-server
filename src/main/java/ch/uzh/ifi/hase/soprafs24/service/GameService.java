@@ -521,6 +521,9 @@ public class GameService {
             lastActivePlayer.setCredit(lastActivePlayer.getCredit() + game.getPot());
             recordGameResults(game, winners);
             game.setGameStatus(GameStatus.GAMEOVER);
+            gameRepository.save(game);
+            gameRepository.flush();
+            return; // Exit early since game is over
         }
         
         // Advance to next game phase
@@ -528,13 +531,10 @@ public class GameService {
             case PREFLOP:
                 // Move to flop - place 3 community cards
                 List<String> communityCards = new ArrayList<>();
-                System.err.println("Community cards1: " + communityCards);
                 communityCards.add(game.getRandomCard());
                 communityCards.add(game.getRandomCard());
                 communityCards.add(game.getRandomCard());
-                System.err.println("Community cards2: " + communityCards);
                 game.setCommunityCards(communityCards);
-                System.err.println("Community cards3: " + communityCards);
                 game.setGameStatus(GameStatus.FLOP);
                 break;
                 
@@ -562,9 +562,6 @@ public class GameService {
                 determineWinnerAndAwardPot(game);
                 endGameAndRecordHistory(game.getId());
                 game.setGameStatus(GameStatus.GAMEOVER);
-                
-                // Record game history
-
                 break;
                 
             default:
