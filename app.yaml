@@ -6,9 +6,3 @@ instance_class: F2
 
 env_variables:
   SPRING_PROFILES_ACTIVE: prod
-
-# Connect to Cloud SQL instance
-# Replace YOUR_INSTANCE_CONNECTION_NAME with your actual Cloud SQL instance connection name
-# Format: project:region:instance
-beta_settings:
-  cloud_sql_instances: 702248203659:europe-west6:sopra-db
