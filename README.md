@@ -1,118 +1,165 @@
-# SoPra RESTful Service Template FS25
+# PokerMaster Arena - Server
 
-## Getting started with Spring Boot
--   Documentation: https://docs.spring.io/spring-boot/docs/current/reference/html/index.html
--   Guides: http://spring.io/guides
-    -   Building a RESTful Web Service: http://spring.io/guides/gs/rest-service/
-    -   Building REST services with Spring: https://spring.io/guides/tutorials/rest/
+## Introduction
 
-## Setup this Template with your IDE of choice
-Download your IDE of choice (e.g., [IntelliJ](https://www.jetbrains.com/idea/download/), [Visual Studio Code](https://code.visualstudio.com/), or [Eclipse](http://www.eclipse.org/downloads/)). Make sure Java 17 is installed on your system (for Windows, please make sure your `JAVA_HOME` environment variable is set to the correct version of Java).
+PokerMaster Arena is a comprehensive online Texas Hold'em poker platform that combines traditional gameplay with modern AI-powered assistance. This repository contains the backend server implementation that powers the game logic, user management, and integrations with external services.
 
-### IntelliJ
-If you consider to use IntelliJ as your IDE of choice, you can make use of your free educational license [here](https://www.jetbrains.com/community/education/#students).
-1. File -> Open... -> SoPra server template
-2. Accept to import the project as a `gradle project`
-3. To build right click the `build.gradle` file and choose `Run Build`
+**Goal**: Create an accessible, feature-rich poker platform that helps players of all skill levels enjoy and improve their game through intelligent assistance and detailed analytics.
 
-### VS Code
-The following extensions can help you get started more easily:
--   `vmware.vscode-spring-boot`
--   `vscjava.vscode-spring-initializr`
--   `vscjava.vscode-spring-boot-dashboard`
--   `vscjava.vscode-java-pack`
+**Motivation**: Bridge the gap between casual poker games and professional platforms by providing real-time AI advice, comprehensive statistics tracking, and a smooth multiplayer experience.
 
-**Note:** You'll need to build the project first with Gradle, just click on the `build` command in the _Gradle Tasks_ extension. Then check the _Spring Boot Dashboard_ extension if it already shows `soprafs24` and hit the play button to start the server. If it doesn't show up, restart VS Code and check again.
+## Technologies Used
 
-## Building with Gradle
-You can use the local Gradle Wrapper to build the application.
--   macOS: `./gradlew`
--   Linux: `./gradlew`
--   Windows: `./gradlew.bat`
+- **Java 17** - Core programming language
+- **Spring Boot 2.7** - Application framework
+- **Spring Data JPA** - Database ORM
+- **H2 Database** - In-memory database
+- **Google Gemini API** - AI poker advisor
+- **Maven** - Build management
+- **JUnit & Mockito** - Testing framework
 
-More Information about [Gradle Wrapper](https://docs.gradle.org/current/userguide/gradle_wrapper.html) and [Gradle](https://gradle.org/docs/).
+## High-level Components
 
-### Build
+### 1. Game Service ([GameService.java](src/main/java/ch/uzh/ifi/hase/soprafs24/service/GameService.java))
+The core game engine that manages:
+- Game state transitions (WAITING → READY → PREFLOP → FLOP → TURN → RIVER → SHOWDOWN)
+- Player actions processing (fold, check, call, raise, bet)
+- Winner determination using poker hand evaluation
+- Integration with AI advisor via Gemini API
 
+### 2. User Service ([UserService.java](src/main/java/ch/uzh/ifi/hase/soprafs24/service/UserService.java))
+Handles all user-related operations:
+- User registration and authentication
+- Token-based session management
+- Profile management and updates
+- Friend system coordination
+
+### 3. Game History Service ([GameHistoryService.java](src/main/java/ch/uzh/ifi/hase/soprafs24/service/GameHistoryService.java))
+Tracks and analyzes game performance:
+- Records game results for all players
+- Calculates user statistics (win rate, total winnings)
+- Generates leaderboards (global and friends)
+- Provides time-filtered analytics
+
+### 4. REST Controllers
+- [GameRoomController](src/main/java/ch/uzh/ifi/hase/soprafs24/controller/GameRoomController.java) - Game creation and management
+- [GameActionController](src/main/java/ch/uzh/ifi/hase/soprafs24/controller/GameActionController.java) - In-game actions and AI advice
+- [UserController](src/main/java/ch/uzh/ifi/hase/soprafs24/controller/UserController.java) - User operations
+- [GameHistoryController](src/main/java/ch/uzh/ifi/hase/soprafs24/controller/GameHistoryController.java) - Statistics and leaderboards
+
+### 5. Entity Models
+- [Game](src/main/java/ch/uzh/ifi/hase/soprafs24/entity/Game.java) - Game state and player management
+- [Player](src/main/java/ch/uzh/ifi/hase/soprafs24/entity/Player.java) - In-game player representation
+- [User](src/main/java/ch/uzh/ifi/hase/soprafs24/entity/User.java) - User account information
+
+## Launch & Deployment
+
+### Prerequisites
+- Java 17 or higher
+- Maven 3.6+
+- Google Cloud SDK (for deployment)
+- Gemini API key (set as environment variable)
+
+### Local Development
+
+1. Clone the repository:
 ```bash
-./gradlew build
+git clone https://github.com/sopra-fs25-group-45/sopra-fs25-group-45-server.git
+cd sopra-fs25-group-45-server
 ```
 
-### Run
-
+2. Set environment variables:
 ```bash
-./gradlew bootRun
+export GEMINI_API_KEY=your_gemini_api_key_her
 ```
 
-You can verify that the server is running by visiting `localhost:8080` in your browser.
-
-### Test
-
+3. Build the project:
 ```bash
-./gradlew test
+mvn clean install
 ```
 
-### Development Mode
-You can start the backend in development mode, this will automatically trigger a new build and reload the application
-once the content of a file has been changed.
+4. Run the application:
+```bash
+mvn spring-boot:run
+```
+The server will start on http://localhost:8080
 
-Start two terminal windows and run:
+### Running Tests
+Execute all tests with coverage report:
+```bash
+mvn test
+```
 
-`./gradlew build --continuous`
+### Deployment to Google App Engine
+Configure app.yaml (already included)
 
-and in the other one:
+Deploy to GAE::
+```bash
+gcloud app deploy
+```
 
-`./gradlew bootRun`
+## API Documentation
+### Key Endpoints
+```http
+POST /auth/register         - User registration
+POST /auth/login            - User login
+POST /games                 - Create new game
+GET  /games                 - List public games
+POST /games/{id}/join       - Join game
+POST /games/{id}/start-betting - Start game
+POST /games/{id}/action     - Perform game action
+GET  /games/{id}/advice     - Get AI poker advice
+GET  /users/{id}/statistics - Get user statistics
+GET  /leaderboard/winnings  - Get leaderboard
+```
 
-If you want to avoid running all tests with every change, use the following command instead:
+## Roadmap
+### Tournament Mode
+Implement multi-table tournament support with:
 
-`./gradlew build --continuous -xtest`
+- Bracket system
+- Blind level progression
+- Prize pool distribution
+- Tournament statistics
 
-## API Endpoint Testing with Postman
-We recommend using [Postman](https://www.getpostman.com) to test your API Endpoints.
+### Advanced AI Features
+Enhance the AI advisor with:
+- Opponent modeling based on play history
+- Bluff detection algorithms
+- Personalized learning recommendations
 
-## Debugging
-If something is not working and/or you don't know what is going on. We recommend using a debugger and step-through the process step-by-step.
+## Authors & Acknowledgments
+- Yunyi (Aaron) Zhang - @TauSigma
+- Lydia Gattiker - @lydia-milena
+- Guanqiao Li - @unscttp
+- Maorong Lin  - @Qavrox
+- Yutian Lei - @IsSaudade
 
-To configure a debugger for SpringBoot's Tomcat servlet (i.e. the process you start with `./gradlew bootRun` command), do the following:
+Special thanks to:
+- SoPra teaching team for guidance
+- Google Gemini team for AI API access
 
-1. Open Tab: **Run**/Edit Configurations
-2. Add a new Remote Configuration and name it properly
-3. Start the Server in Debug mode: `./gradlew bootRun --debug-jvm`
-4. Press `Shift + F9` or the use **Run**/Debug "Name of your task"
-5. Set breakpoints in the application where you need it
-6. Step through the process one step at a time
+## License
+This project is licensed under the MIT License - see below:
 
-## Testing
-Have a look here: https://www.baeldung.com/spring-boot-testing
+MIT License
 
-<br>
-<br>
-<br>
+Copyright (c) 2025 SoPra Group 45
 
-## Docker
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
 
-### Introduction
-This year, for the first time, Docker will be used to ease the process of deployment.\
-Docker is a tool that uses containers as isolated environments, ensuring that the application runs consistently and uniformly across different devices.\
-Everything in this repository is already set up to minimize your effort for deployment.\
-All changes to the main branch will automatically be pushed to dockerhub and optimized for production.
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
 
-### Setup
-1. **One** member of the team should create an account on [dockerhub](https://hub.docker.com/), _incorporating the group number into the account name_, for example, `SoPra_group_XX`.\
-2. This account then creates a repository on dockerhub with the _same name as the group's Github repository name_.\
-3. Finally, the person's account details need to be added as [secrets](https://docs.github.com/en/actions/security-guides/using-secrets-in-github-actions#creating-secrets-for-a-repository) to the group's repository:
-    - dockerhub_username (the username of the dockerhub account from step 1, for example, `SoPra_group_XX`)
-    - dockerhub_password (a generated PAT([personal access token](https://docs.docker.com/docker-hub/access-tokens/)) of the account with read and write access)
-    - dockerhub_repo_name (the name of the dockerhub repository from step 2)
-
-### Pull and run
-Once the image is created and has been successfully pushed to dockerhub, the image can be run on any machine.\
-Ensure that [Docker](https://www.docker.com/) is installed on the machine you wish to run the container.\
-First, pull (download) the image with the following command, replacing your username and repository name accordingly.
-
-```docker pull <dockerhub_username>/<dockerhub_repo_name>```
-
-Then, run the image in a container with the following command, again replacing _<dockerhub_username>_ and _<dockerhub_repo_name>_ accordingly.
-
-```docker run -p 3000:3000 <dockerhub_username>/<dockerhub_repo_name>```
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
