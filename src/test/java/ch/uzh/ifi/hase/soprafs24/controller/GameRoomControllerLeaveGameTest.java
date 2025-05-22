@@ -13,6 +13,9 @@ import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @WebMvcTest(GameRoomController.class)
 class GameRoomControllerLeaveGameTest {
 
@@ -49,4 +52,16 @@ class GameRoomControllerLeaveGameTest {
                         .header("Authorization", token))
                .andExpect(status().isNotFound());
     }
+    @Test
+    void leaveGame_gameNotOver_returnsForbidden() throws Exception {
+        Long gameId = 1L;
+        String token = "Bearer badToken";
+
+        doThrow(new ResponseStatusException(HttpStatus.FORBIDDEN, "You are not allowed to leave game at this phase"))
+            .when(gameService).leaveGame(gameId, "badToken"); // match what controller extracts
+
+        mockMvc.perform(delete("/games/{gameId}/join", gameId)
+                .header("Authorization", token))
+            .andExpect(status().isForbidden());
+}
 }
