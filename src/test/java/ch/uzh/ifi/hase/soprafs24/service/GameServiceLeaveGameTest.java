@@ -95,5 +95,35 @@ public class GameServiceLeaveGameTest {
         verify(authenticator).checkTokenValidity(token);
         verify(gameRepository).save(mockGame);
     }
-    
+    @Test
+    public void leaveGame_gameNotOver_throwsForbidden() {
+        // Arrange
+        String token = "valid-token";
+        Long gameId = 42L;
+        Long userId = 1L;
+
+        User mockUser = new User();
+        mockUser.setId(userId);
+
+        Player mockPlayer = mock(Player.class);
+        when(mockPlayer.getUserId()).thenReturn(userId);
+
+        Game mockGame = new Game();
+        mockGame.setStatus(GameStatus.PREFLOP); // Not GAMEOVER
+        List<Player> playerList = new ArrayList<>();
+        playerList.add(mockPlayer);
+        mockGame.setPlayers(playerList);
+
+        when(userRepository.findByToken(token)).thenReturn(mockUser);
+        when(gameRepository.findByid(gameId)).thenReturn(mockGame);
+        doNothing().when(authenticator).checkTokenValidity(token);
+
+        // Act + Assert
+        Exception exception = assertThrows(RuntimeException.class, () ->
+            gameService.leaveGame(gameId, token)
+        );
+
+        assertTrue(exception.getMessage().contains("not allowed to leave"));
+        verify(authenticator).checkTokenValidity(token);
+    }
 }
