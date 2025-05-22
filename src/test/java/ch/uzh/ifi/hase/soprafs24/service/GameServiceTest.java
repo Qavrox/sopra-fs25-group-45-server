@@ -51,12 +51,13 @@ public class GameServiceTest {
     private PlayerRepository playerRepository;
 
     @Mock
+    private GameHistoryService gameHistoryService;
+
+    @Mock
     private Authenticator authenticator;
 
     @InjectMocks
     private GameService gameService;
-
-    
 
     private Game game;
     private Game privateGame;
@@ -939,41 +940,656 @@ public class GameServiceTest {
         });
     }
 
-
-    }
-
-
-
-
-
-    /*
     @Test
-    void testJoinFullGame() {
-        // Setup a game that is already full
-        Game fullGame = new Game();
-        fullGame.setId(6L);
-        fullGame.setCreatorId(1L);
-        fullGame.setIsPublic(true);
-        fullGame.setMaximalPlayers(3);
-        fullGame.setStartCredit(1000L);
-        fullGame.setGameStatus(GameStatus.READY);
+    public void testPlayerFoldSkipsToNextPlayer() {
+        // Setup game with 3 players
+        Game testGame = new Game();
+        testGame.setId(10L);
+        testGame.setGameStatus(GameStatus.PREFLOP);
+        testGame.setCurrentPlayerIndex(0); // First player's turn
+        testGame.setLastRaisePlayerIndex(-1);
+        testGame.setCallAmount(10L);
         
-        List<Player> players = new ArrayList<>();
-        players.add(new Player(1L, new ArrayList<>(), fullGame));
-        players.add(new Player(2L, new ArrayList<>(), fullGame));
-        players.add(new Player(3L, new ArrayList<>(), fullGame)); // Game is full with 3 players
-        fullGame.setPlayers(players);
+        // Initialize the deck
+        testGame.initializeShuffledDeck();
         
-        when(gameRepository.findByid(6L)).thenReturn(fullGame);
-        when(userRepository.findByToken(user.getToken())).thenReturn(user);
+        // Add players to the game
+        List<Player> testPlayers = new ArrayList<>();
         
-        // Execute and verify
-        Exception exception = assertThrows(ResponseStatusException.class, () -> {
-            gameService.joinGame(6L, user.getToken(), null);
-        });
+        Player player1 = new Player(1L, Arrays.asList("AH", "KH"), testGame);
+        player1.setCredit(1000L);
+        player1.setCurrentBet(0L);
         
-        assertTrue(exception.getMessage().contains("Game is full"));
-        verify(gameRepository, never()).save(any(Game.class));
+        Player player2 = new Player(2L, Arrays.asList("QS", "JS"), testGame);
+        player2.setCredit(1000L);
+        player2.setCurrentBet(0L);
+        
+        Player player3 = new Player(3L, Arrays.asList("10D", "9D"), testGame);
+        player3.setCredit(1000L);
+        player3.setCurrentBet(0L);
+        
+        testPlayers.add(player1);
+        testPlayers.add(player2);
+        testPlayers.add(player3);
+        testGame.setPlayers(testPlayers);
+
+        // Mock repository behavior
+        when(gameRepository.findByid(10L)).thenReturn(testGame);
+        when(gameRepository.save(any(Game.class))).thenReturn(testGame);
+        
+        // First player folds
+        gameService.processPlayerAction(10L, 1L, PlayerAction.FOLD, 0L);
+        
+        // Verify player1 has folded
+        assertTrue(player1.getHasFolded());
+        assertEquals(PlayerAction.FOLD, player1.getLastAction());
+        
+        // Verify current player is now player2 (index 1)
+        assertEquals(1, testGame.getCurrentPlayerIndex());
+        
+        // Player2 calls
+        gameService.processPlayerAction(10L, 2L, PlayerAction.CALL, 0L);
+        
+        // Verify it's now player3's turn
+        assertEquals(2, testGame.getCurrentPlayerIndex());
+        
+        // Player3 calls
+        gameService.processPlayerAction(10L, 3L, PlayerAction.CALL, 0L);
+        
+        // Verify turn skips the folded player1 and goes back to player2
+        assertEquals(1, testGame.getCurrentPlayerIndex());
     }
-         */
+
+    @Test
+    public void testMultiplePlayersFold() {
+        // Setup game with 3 players
+        Game testGame = new Game();
+        testGame.setId(11L);
+        testGame.setGameStatus(GameStatus.PREFLOP);
+        testGame.setCurrentPlayerIndex(0); // First player's turn
+        testGame.setLastRaisePlayerIndex(-1);
+        testGame.setPot(0L);
+        testGame.setCallAmount(10L);
+        
+        // Initialize the deck
+        testGame.initializeShuffledDeck();
+        
+        // Add players to the game
+        List<Player> testPlayers = new ArrayList<>();
+        
+        Player player1 = new Player(1L, Arrays.asList("AH", "KH"), testGame);
+        player1.setCredit(1000L);
+        player1.setCurrentBet(0L);
+        
+        Player player2 = new Player(2L, Arrays.asList("QS", "JS"), testGame);
+        player2.setCredit(1000L);
+        player2.setCurrentBet(0L);
+        
+        Player player3 = new Player(3L, Arrays.asList("10D", "9D"), testGame);
+        player3.setCredit(1000L);
+        player3.setCurrentBet(0L);
+        
+        testPlayers.add(player1);
+        testPlayers.add(player2);
+        testPlayers.add(player3);
+        testGame.setPlayers(testPlayers);
+
+        // Mock repository behavior
+        when(gameRepository.findByid(11L)).thenReturn(testGame);
+        when(gameRepository.save(any(Game.class))).thenReturn(testGame);
+        
+        // Player1 bets
+        gameService.processPlayerAction(11L, 1L, PlayerAction.BET, 10L);
+        
+        // Player2 folds
+        gameService.processPlayerAction(11L, 2L, PlayerAction.FOLD, 0L);
+        
+        // Verify player2 has folded
+        assertTrue(player2.getHasFolded());
+        assertEquals(PlayerAction.FOLD, player2.getLastAction());
+        
+        // Verify it's now player3's turn
+        assertEquals(2, testGame.getCurrentPlayerIndex());
+        
+        // Player3 folds too
+        gameService.processPlayerAction(11L, 3L, PlayerAction.FOLD, 0L);
+        
+        // Verify player3 has folded
+        assertTrue(player3.getHasFolded());
+        assertEquals(PlayerAction.FOLD, player3.getLastAction());
+        
+        // Verify game is over and player1 won
+        assertEquals(GameStatus.GAMEOVER, testGame.getGameStatus());
+        assertNotNull(testGame.getWinners());
+        assertEquals(1, testGame.getWinners().size());
+        assertEquals(1L, testGame.getWinners().get(0).getUserId());
+    }
+
+    @Test
+    public void testFourPlayerGameRoundCompletesCorrectly() {
+        // Setup game with 4 players
+        Game testGame = new Game();
+        testGame.setId(12L);
+        testGame.setGameStatus(GameStatus.PREFLOP);
+        testGame.setCurrentPlayerIndex(0); // First player's turn
+        testGame.setLastRaisePlayerIndex(-1);
+        testGame.setPot(0L);
+        testGame.setCallAmount(0L);
+        testGame.setCommunityCards(new ArrayList<>());
+        
+        // Initialize the deck
+        testGame.initializeShuffledDeck();
+        
+        // Add 4 players to the game
+        List<Player> testPlayers = new ArrayList<>();
+        
+        Player player1 = new Player(1L, Arrays.asList("AH", "KH"), testGame);
+        player1.setCredit(1000L);
+        player1.setCurrentBet(0L);
+        
+        Player player2 = new Player(2L, Arrays.asList("QS", "JS"), testGame);
+        player2.setCredit(1000L);
+        player2.setCurrentBet(0L);
+        
+        Player player3 = new Player(3L, Arrays.asList("10D", "9D"), testGame);
+        player3.setCredit(1000L);
+        player3.setCurrentBet(0L);
+        
+        Player player4 = new Player(4L, Arrays.asList("2C", "3C"), testGame);
+        player4.setCredit(1000L);
+        player4.setCurrentBet(0L);
+        
+        testPlayers.add(player1);
+        testPlayers.add(player2);
+        testPlayers.add(player3);
+        testPlayers.add(player4);
+        testGame.setPlayers(testPlayers);
+
+        // Mock repository behavior
+        when(gameRepository.findByid(12L)).thenReturn(testGame);
+        when(gameRepository.save(any(Game.class))).thenReturn(testGame);
+        
+        // Create a spy of the game to override collectBetsIntoPot method
+        Game spyGame = Mockito.spy(testGame);
+        
+        // Make collectBetsIntoPot actually add bets to pot
+        Mockito.doAnswer(invocation -> {
+            long totalBets = spyGame.getPlayers().stream()
+                    .mapToLong(Player::getCurrentBet)
+                    .sum();
+            spyGame.setPot(spyGame.getPot() + totalBets);
+            return null;
+        }).when(spyGame).collectBetsIntoPot();
+        
+        when(gameRepository.findByid(12L)).thenReturn(spyGame);
+        
+        // Player1 bets
+        gameService.processPlayerAction(12L, 1L, PlayerAction.BET, 20L);
+        
+        // Verify player1's state
+        assertEquals(980L, player1.getCredit());
+        assertEquals(20L, player1.getCurrentBet());
+        assertEquals(20L, spyGame.getCallAmount());
+        
+        // Verify it's player2's turn
+        assertEquals(1, spyGame.getCurrentPlayerIndex());
+        
+        // Player2 calls
+        gameService.processPlayerAction(12L, 2L, PlayerAction.CALL, 0L);
+        
+        // Verify player2's state
+        assertEquals(980L, player2.getCredit());
+        assertEquals(20L, player2.getCurrentBet());
+        
+        // Verify it's player3's turn
+        assertEquals(2, spyGame.getCurrentPlayerIndex());
+        
+        // Player3 raises
+        gameService.processPlayerAction(12L, 3L, PlayerAction.RAISE, 40L);
+        
+        // Verify player3's state
+        assertEquals(960L, player3.getCredit());
+        assertEquals(40L, player3.getCurrentBet());
+        assertEquals(40L, spyGame.getCallAmount());
+        
+        // Verify it's player4's turn
+        assertEquals(3, spyGame.getCurrentPlayerIndex());
+        
+        // Player4 calls
+        gameService.processPlayerAction(12L, 4L, PlayerAction.CALL, 0L);
+        
+        // Verify player4's state
+        assertEquals(960L, player4.getCredit());
+        assertEquals(40L, player4.getCurrentBet());
+        
+        // Now it should go back to player1
+        assertEquals(0, spyGame.getCurrentPlayerIndex());
+        
+        // Player1 calls (paying the difference)
+        gameService.processPlayerAction(12L, 1L, PlayerAction.CALL, 0L);
+        
+        // Verify player1's updated state
+        assertEquals(960L, player1.getCredit());
+        assertEquals(40L, player1.getCurrentBet());
+        
+        // Now it should go to player2
+        assertEquals(1, spyGame.getCurrentPlayerIndex());
+        
+        // Player2 calls (paying the difference)
+        gameService.processPlayerAction(12L, 2L, PlayerAction.CALL, 0L);
+        
+        // Verify player2's updated state
+        assertEquals(960L, player2.getCredit());
+        assertEquals(40L, player2.getCurrentBet());
+        
+        // Everyone has acted, betting round should be complete
+        // Game should advance to FLOP with community cards
+        assertEquals(GameStatus.FLOP, spyGame.getGameStatus());
+        
+        // The test can't fully verify community cards as we're using a real deck
+        assertTrue(spyGame.getCommunityCards().size() >= 3); // At least 3 cards in the flop
+        assertEquals(160L, spyGame.getPot()); // 40 x 4 players
+    }
+
+    @Test
+    public void testAllInWithMultiplePlayers() {
+        // Setup game with 3 players
+        Game testGame = new Game();
+        testGame.setId(13L);
+        testGame.setGameStatus(GameStatus.PREFLOP);
+        testGame.setCurrentPlayerIndex(0); // First player's turn
+        testGame.setLastRaisePlayerIndex(-1);
+        testGame.setPot(0L);
+        testGame.setCallAmount(0L);
+        
+        // Initialize the deck
+        testGame.initializeShuffledDeck();
+        
+        // Add players to the game with different stack sizes
+        List<Player> testPlayers = new ArrayList<>();
+        
+        Player player1 = new Player(1L, Arrays.asList("AH", "KH"), testGame);
+        player1.setCredit(100L); // Smaller stack
+        player1.setCurrentBet(0L);
+        
+        Player player2 = new Player(2L, Arrays.asList("QS", "JS"), testGame);
+        player2.setCredit(500L); // Medium stack
+        player2.setCurrentBet(0L);
+        
+        Player player3 = new Player(3L, Arrays.asList("10D", "9D"), testGame);
+        player3.setCredit(1000L); // Larger stack
+        player3.setCurrentBet(0L);
+        
+        testPlayers.add(player1);
+        testPlayers.add(player2);
+        testPlayers.add(player3);
+        testGame.setPlayers(testPlayers);
+        
+        // Mock repository behavior
+        when(gameRepository.findByid(13L)).thenReturn(testGame);
+        when(gameRepository.save(any(Game.class))).thenReturn(testGame);
+        
+        // Test that player1 can go all-in
+        gameService.processPlayerAction(13L, 1L, PlayerAction.ALL_IN, 0L);
+        
+        // Verify player1's state after all-in
+        assertEquals(0L, player1.getCredit()); // All money is bet
+        assertEquals(100L, player1.getCurrentBet()); // The bet is equal to their initial credit
+        assertEquals(PlayerAction.ALL_IN, player1.getLastAction());
+        assertEquals(100L, testGame.getCallAmount());
+        
+        // Test that another player can call the all-in
+        gameService.processPlayerAction(13L, 2L, PlayerAction.CALL, 0L);
+        
+        // Verify player2's state after calling
+        assertEquals(400L, player2.getCredit()); // Credit reduced by call amount
+        assertEquals(100L, player2.getCurrentBet()); // Bet matches the call amount
+        assertEquals(PlayerAction.CALL, player2.getLastAction());
+        
+        // Test that the third player can raise beyond the all-in amount
+        gameService.processPlayerAction(13L, 3L, PlayerAction.RAISE, 200L);
+        
+        // Verify player3's state after raising
+        assertEquals(800L, player3.getCredit()); // Credit reduced by raise amount
+        assertEquals(200L, player3.getCurrentBet()); // Bet is the new raise amount
+        assertEquals(PlayerAction.RAISE, player3.getLastAction());
+        assertEquals(200L, testGame.getCallAmount()); // Call amount updated to raise
+    }
+    
+    @Test
+    public void testWinnerDeterminationWithMultiplePlayers() {
+        // Setup game with 4 players
+        Game testGame = new Game();
+        testGame.setId(14L);
+        testGame.setGameStatus(GameStatus.RIVER); // Final betting round
+        testGame.setPot(400L); // Example pot size
+        
+        // Set up community cards for a board with multiple hand possibilities
+        List<String> communityCards = Arrays.asList("AS", "KS", "QS", "2H", "3D");
+        testGame.setCommunityCards(communityCards);
+        
+        // Add 4 players with different hands
+        List<Player> testPlayers = new ArrayList<>();
+        
+        Player player1 = new Player(1L, Arrays.asList("JS", "10S"), testGame); // Royal flush
+        player1.setCredit(500L);
+        player1.setHasFolded(false);
+        
+        Player player2 = new Player(2L, Arrays.asList("JH", "10H"), testGame); // Straight
+        player2.setCredit(500L);
+        player2.setHasFolded(false);
+        
+        Player player3 = new Player(3L, Arrays.asList("AH", "AD"), testGame); // Three of a kind (aces)
+        player3.setCredit(500L);
+        player3.setHasFolded(false);
+        
+        Player player4 = new Player(4L, Arrays.asList("KH", "KD"), testGame); // Two pair (kings and aces)
+        player4.setCredit(500L);
+        player4.setHasFolded(false);
+        
+        testPlayers.add(player1);
+        testPlayers.add(player2);
+        testPlayers.add(player3);
+        testPlayers.add(player4);
+        testGame.setPlayers(testPlayers);
+
+        // Mock repository behavior
+        when(gameRepository.findByid(14L)).thenReturn(testGame);
+        when(gameRepository.save(any(Game.class))).thenReturn(testGame);
+        
+        // Determine the winner
+        List<Player> winners = gameService.determineWinners(14L);
+        
+        // Verify player1 with the royal flush wins
+        assertEquals(1, winners.size());
+        assertEquals(1L, winners.get(0).getUserId());
+    }
+    
+    @Test
+    public void testTiedWinnersWithMultiplePlayers() {
+        // Setup game with 4 players where 2 players have equivalent hands
+        Game testGame = new Game();
+        testGame.setId(15L);
+        testGame.setGameStatus(GameStatus.RIVER); // Final betting round
+        testGame.setPot(400L); // Example pot size
+        
+        // Set up community cards for a board that could result in a tie
+        // Using 5 community cards that force a tie with any player having the same hand
+        List<String> communityCards = Arrays.asList("AS", "KS", "QS", "JS", "10S");
+        testGame.setCommunityCards(communityCards);
+        
+        // Add 4 players with different hands
+        List<Player> testPlayers = new ArrayList<>();
+        
+        Player player1 = new Player(1L, Arrays.asList("9H", "8H"), testGame); // Royal flush from community
+        player1.setCredit(500L);
+        player1.setHasFolded(false);
+        
+        Player player2 = new Player(2L, Arrays.asList("10H", "9D"), testGame); // Royal flush from community
+        player2.setCredit(500L);
+        player2.setHasFolded(false);
+        
+        Player player3 = new Player(3L, Arrays.asList("10D", "9S"), testGame); // Royal flush from community
+        player3.setCredit(500L);
+        player3.setHasFolded(false);
+        
+        Player player4 = new Player(4L, Arrays.asList("2H", "4H"), testGame); // Royal flush from community
+        player4.setCredit(500L);
+        player4.setHasFolded(false);
+        
+        testPlayers.add(player1);
+        testPlayers.add(player2);
+        testPlayers.add(player3);
+        testPlayers.add(player4);
+        testGame.setPlayers(testPlayers);
+
+        // Mock repository behavior
+        when(gameRepository.findByid(15L)).thenReturn(testGame);
+        when(gameRepository.save(any(Game.class))).thenReturn(testGame);
+        
+        // Determine the winners
+        List<Player> winners = gameService.determineWinners(15L);
+        
+        // Verify all players tie with royal flushes from the community cards
+        assertEquals(4, winners.size());
+        assertTrue(winners.stream().anyMatch(p -> p.getUserId() == 1L));
+        assertTrue(winners.stream().anyMatch(p -> p.getUserId() == 2L));
+        assertTrue(winners.stream().anyMatch(p -> p.getUserId() == 3L));
+        assertTrue(winners.stream().anyMatch(p -> p.getUserId() == 4L));
+    }
+
+    @Test
+    public void testDetermineWinnersExcludesFoldedPlayers() {
+        // Setup game with 4 players where one has folded
+        Game testGame = new Game();
+        testGame.setId(16L);
+        testGame.setGameStatus(GameStatus.RIVER);
+        testGame.setPot(400L);
+        
+        // Set up community cards
+        List<String> communityCards = Arrays.asList("AS", "KS", "QS", "JS", "2H");
+        testGame.setCommunityCards(communityCards);
+        
+        // Add 4 players with different hands
+        List<Player> testPlayers = new ArrayList<>();
+        
+        // Royal flush player (but folded!)
+        Player player1 = new Player(1L, Arrays.asList("10S", "9S"), testGame);
+        player1.setCredit(500L);
+        player1.setHasFolded(true); // This player folded
+        
+        // Straight flush player
+        Player player2 = new Player(2L, Arrays.asList("10S", "9S"), testGame);
+        player2.setCredit(500L);
+        player2.setHasFolded(false);
+        
+        // Three of a kind
+        Player player3 = new Player(3L, Arrays.asList("AH", "AD"), testGame);
+        player3.setCredit(500L);
+        player3.setHasFolded(false);
+        
+        // Two pair
+        Player player4 = new Player(4L, Arrays.asList("KH", "KD"), testGame);
+        player4.setCredit(500L);
+        player4.setHasFolded(false);
+        
+        testPlayers.add(player1);
+        testPlayers.add(player2);
+        testPlayers.add(player3);
+        testPlayers.add(player4);
+        testGame.setPlayers(testPlayers);
+
+        // Mock repository behavior
+        when(gameRepository.findByid(16L)).thenReturn(testGame);
+        when(gameRepository.save(any(Game.class))).thenReturn(testGame);
+        
+        // Determine the winner
+        List<Player> winners = gameService.determineWinners(16L);
+        
+        // Verify player1 with the royal flush is NOT the winner because they folded
+        // Instead, player2 with the straight flush should win
+        assertEquals(1, winners.size());
+        assertEquals(2L, winners.get(0).getUserId());
+        
+        // Verify folded player is not in winners list
+        assertFalse(winners.stream().anyMatch(p -> p.getUserId() == 1L));
+    }
+    
+    @Test
+    public void testDetermineWinnersWithMultipleActivePlayers() {
+        // Setup game with 5 players where 2 have folded
+        Game testGame = new Game();
+        testGame.setId(17L);
+        testGame.setGameStatus(GameStatus.RIVER);
+        testGame.setPot(500L);
+        
+        // Set up community cards
+        List<String> communityCards = Arrays.asList("AS", "KS", "QS", "JS", "2H");
+        testGame.setCommunityCards(communityCards);
+        
+        List<Player> testPlayers = new ArrayList<>();
+        
+        // Player 1 - folded
+        Player player1 = new Player(1L, Arrays.asList("AH", "KH"), testGame);
+        player1.setCredit(500L);
+        player1.setHasFolded(true);
+        
+        // Player 2 - active with straight flush
+        Player player2 = new Player(2L, Arrays.asList("10S", "9S"), testGame);
+        player2.setCredit(500L);
+        player2.setHasFolded(false);
+        
+        // Player 3 - active with three of a kind
+        Player player3 = new Player(3L, Arrays.asList("AH", "AD"), testGame);
+        player3.setCredit(500L);
+        player3.setHasFolded(false);
+        
+        // Player 4 - folded
+        Player player4 = new Player(4L, Arrays.asList("KH", "KD"), testGame);
+        player4.setCredit(500L);
+        player4.setHasFolded(true);
+        
+        // Player 5 - active with four of a kind
+        Player player5 = new Player(5L, Arrays.asList("AC", "AH"), testGame);
+        player5.setCredit(500L);
+        player5.setHasFolded(false);
+        
+        testPlayers.add(player1);
+        testPlayers.add(player2);
+        testPlayers.add(player3);
+        testPlayers.add(player4);
+        testPlayers.add(player5);
+        testGame.setPlayers(testPlayers);
+
+        when(gameRepository.findByid(17L)).thenReturn(testGame);
+        when(gameRepository.save(any(Game.class))).thenReturn(testGame);
+        
+        // Determine the winners
+        List<Player> winners = gameService.determineWinners(17L);
+        
+        // Verify that only active players are considered
+        assertEquals(1, winners.size());
+        assertEquals(2L, winners.get(0).getUserId());
+        
+        // Verify folded players are not in winners list
+        assertFalse(winners.stream().anyMatch(p -> p.getUserId() == 1L));
+        assertFalse(winners.stream().anyMatch(p -> p.getUserId() == 4L));
+    }
+    
+    @Test
+    public void testHandDescriptionCorrectness() {
+        // Test that hand descriptions match expected values
+        Game testGame = new Game();
+        testGame.setId(18L);
+        
+        // Set up community cards for a royal flush
+        List<String> communityCards = Arrays.asList("AS", "KS", "QS", "JS", "10S");
+        
+        // Create a player with any two cards (royal flush is on the board)
+        Player player = new Player(1L, Arrays.asList("2H", "3H"), testGame);
+        
+        // Mock repository
+        when(gameRepository.findByid(18L)).thenReturn(testGame);
+        
+        // Get hand description
+        String handDescription = gameService.getHandDescription(player, communityCards);
+        
+        // Verify correct description
+        assertEquals("Royal Flush", handDescription);
+        
+        // Test another scenario - Full House
+        List<String> fullHouseBoard = Arrays.asList("AS", "AD", "AC", "KS", "KH");
+        String fullHouseDescription = gameService.getHandDescription(player, fullHouseBoard);
+        assertEquals("Full House, Aces full of Kings", fullHouseDescription);
+    }
+    
+    @Test
+    public void testOnlyOnePlayerRemainsActive() {
+        // Setup game with 3 players where 2 have folded
+        Game testGame = new Game();
+        testGame.setId(19L);
+        testGame.setGameStatus(GameStatus.RIVER);
+        testGame.setPot(300L);
+        
+        // Set up community cards
+        List<String> communityCards = Arrays.asList("AS", "KS", "QS", "JS", "10S");
+        testGame.setCommunityCards(communityCards);
+        
+        List<Player> testPlayers = new ArrayList<>();
+        
+        // Player 1 - folded
+        Player player1 = new Player(1L, Arrays.asList("AH", "KH"), testGame);
+        player1.setCredit(500L);
+        player1.setHasFolded(true);
+        
+        // Player 2 - only active player
+        Player player2 = new Player(2L, Arrays.asList("2C", "3C"), testGame);
+        player2.setCredit(500L);
+        player2.setHasFolded(false);
+        
+        // Player 3 - folded
+        Player player3 = new Player(3L, Arrays.asList("AH", "AD"), testGame);
+        player3.setCredit(500L);
+        player3.setHasFolded(true);
+        
+        testPlayers.add(player1);
+        testPlayers.add(player2);
+        testPlayers.add(player3);
+        testGame.setPlayers(testPlayers);
+
+        when(gameRepository.findByid(19L)).thenReturn(testGame);
+        when(gameRepository.save(any(Game.class))).thenReturn(testGame);
+        
+        // Determine the winners
+        List<Player> winners = gameService.determineWinners(19L);
+        
+        // Verify that the only active player is the winner
+        assertEquals(1, winners.size());
+        assertEquals(2L, winners.get(0).getUserId());
+    }
+    
+    @Test
+    public void testDetermineWinnersConsistentResults() {
+        // Setup two identical games to ensure consistency
+        Game game1 = new Game();
+        game1.setId(20L);
+        game1.setGameStatus(GameStatus.RIVER);
+        
+        Game game2 = new Game();
+        game2.setId(21L);
+        game2.setGameStatus(GameStatus.RIVER);
+        
+        // Same community cards
+        List<String> communityCards = Arrays.asList("AS", "KS", "QS", "JS", "2H");
+        game1.setCommunityCards(communityCards);
+        game2.setCommunityCards(communityCards);
+        
+        // Same players with same hands
+        Player player1Game1 = new Player(1L, Arrays.asList("10S", "9S"), game1);
+        player1Game1.setHasFolded(false);
+        
+        Player player2Game1 = new Player(2L, Arrays.asList("AH", "AD"), game1);
+        player2Game1.setHasFolded(false);
+        
+        Player player1Game2 = new Player(1L, Arrays.asList("10S", "9S"), game2);
+        player1Game2.setHasFolded(false);
+        
+        Player player2Game2 = new Player(2L, Arrays.asList("AH", "AD"), game2);
+        player2Game2.setHasFolded(false);
+        
+        game1.setPlayers(Arrays.asList(player1Game1, player2Game1));
+        game2.setPlayers(Arrays.asList(player1Game2, player2Game2));
+        
+        when(gameRepository.findByid(20L)).thenReturn(game1);
+        when(gameRepository.findByid(21L)).thenReturn(game2);
+        
+        // Get winners for both games
+        List<Player> winners1 = gameService.determineWinners(20L);
+        List<Player> winners2 = gameService.determineWinners(21L);
+        
+        // Verify consistent results
+        assertEquals(winners1.size(), winners2.size());
+        assertEquals(winners1.get(0).getUserId(), winners2.get(0).getUserId());
+    }
+}
 

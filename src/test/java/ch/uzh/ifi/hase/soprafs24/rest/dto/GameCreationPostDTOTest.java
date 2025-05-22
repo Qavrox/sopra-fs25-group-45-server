@@ -24,7 +24,6 @@ public class GameCreationPostDTOTest {
         // Set values
         dto.setCreatorId(creatorId);
         dto.setPassword(password);
-        dto.setPublic(isPublic);
         dto.setMaximalPlayers(maximalPlayers);
         dto.setStartCredit(startCredit);
         dto.setSmallBlind(smallBlind);
@@ -77,6 +76,7 @@ public class GameCreationPostDTOTest {
         dto.setPublic(false);
         assertFalse(dto.getIsPublic(), "isPublic should be false after setting to false.");
     }
+
 
     @Test
     public void testDifferentInstances() {

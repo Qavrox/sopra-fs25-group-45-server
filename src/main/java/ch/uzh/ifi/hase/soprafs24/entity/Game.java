@@ -324,6 +324,10 @@ public class Game implements Serializable {
         }
         // Start with player after small blind
         currentPlayerIndex = (smallBlindIndex + 1) % players.size();
+        // Skip folded players
+        while (players.get(currentPlayerIndex).getHasFolded()) {
+            currentPlayerIndex = (currentPlayerIndex + 1) % players.size();
+        }
         lastRaisePlayerIndex = -1;
     }
     
