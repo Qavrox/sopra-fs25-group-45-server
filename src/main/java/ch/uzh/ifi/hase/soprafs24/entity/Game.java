@@ -53,8 +53,13 @@ public class Game implements Serializable {
     @OneToMany(mappedBy = "game", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Player> players = new ArrayList<>();
 
-    @OneToMany(mappedBy = "game", fetch = FetchType.EAGER)
-    private List<Player> winners;
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(
+        name = "GAME_WINNERS",
+        joinColumns = @JoinColumn(name = "game_id"),
+        inverseJoinColumns = @JoinColumn(name = "player_id")
+    )
+    private List<Player> winners = new ArrayList<>();
 
     @Column(name = "card", nullable = false)
     @ElementCollection
@@ -417,7 +422,7 @@ public class Game implements Serializable {
         return gameStatus;
     }
 
-    public Long getcurrentPlayerId() {
+    public Long getCurrentPlayerId() {
         // Check if players list is not empty and index is valid
         if (players != null && !players.isEmpty() && currentPlayerIndex >= 0 && currentPlayerIndex < players.size()) {
             Player currentPlayer = players.get(currentPlayerIndex);
