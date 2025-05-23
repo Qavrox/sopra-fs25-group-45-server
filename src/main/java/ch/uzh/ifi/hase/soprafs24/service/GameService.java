@@ -521,8 +521,10 @@ public class GameService {
             lastActivePlayer.setCredit(lastActivePlayer.getCredit() + game.getPot());
             recordGameResults(game, winners);
             game.setGameStatus(GameStatus.GAMEOVER);
+            
             gameRepository.save(game);
             gameRepository.flush();
+            
             return; // Exit early since game is over
         }
         
@@ -734,6 +736,9 @@ public class GameService {
         }
 
         game.setWinners(winners);
+        gameRepository.save(game);
+        gameRepository.flush();
+
         return winners;
     }
 
