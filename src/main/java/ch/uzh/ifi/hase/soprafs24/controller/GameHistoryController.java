@@ -86,8 +86,18 @@ public class GameHistoryController {
         }
         
         // Parse dates
-        LocalDateTime startDate = LocalDateTime.parse(startDateStr, DateTimeFormatter.ISO_DATE_TIME);
-        LocalDateTime endDate = LocalDateTime.parse(endDateStr, DateTimeFormatter.ISO_DATE_TIME);
+        LocalDateTime startDate;
+        LocalDateTime endDate;
+        try {
+            startDate = LocalDateTime.parse(startDateStr, DateTimeFormatter.ISO_DATE_TIME);
+        } catch (java.time.format.DateTimeParseException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid start date format. Please use ISO_DATE_TIME: " + startDateStr);
+        }
+        try {
+            endDate = LocalDateTime.parse(endDateStr, DateTimeFormatter.ISO_DATE_TIME);
+        } catch (java.time.format.DateTimeParseException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid end date format. Please use ISO_DATE_TIME: " + endDateStr);
+        }
         
         // Get game history
         List<GameHistory> gameHistories = gameHistoryService.getUserGameHistoryByTimeRange(userId, startDate, endDate);
