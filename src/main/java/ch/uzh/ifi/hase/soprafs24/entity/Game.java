@@ -367,7 +367,8 @@ public class Game implements Serializable {
         // Now check that all active players have acted and their bets match
         for (Player player : players) {
             if (!player.getHasFolded()) {
-                if (!player.getHasActed()) {
+                // Consider a player as having acted if they are all-in (can't match the current bet)
+                if (!player.getHasActed() && player.getCredit() + player.getCurrentBet() >= currentBet) {
                     allActed = false;
                     break;
                 }
