@@ -190,7 +190,7 @@ public class DTOMapperTest {
     //then
     assertEquals(user.getId(), userFriendDTO.getId());
     assertEquals(user.getUsername(), userFriendDTO.getUsername());
-    assertEquals(user.getStatus(), userFriendDTO.getOnline());
+    assertEquals(user.getStatus() == UserStatus.ONLINE, userFriendDTO.getOnline());
     assertEquals(user.getCreationDate(), userFriendDTO.getCreatedAt());
     assertEquals(user.getBirthday(), userFriendDTO.getBirthday());
   }

@@ -961,8 +961,12 @@ public class GameService {
             ResponseEntity<Map> response = restTemplate.postForEntity(url, entity, Map.class);
             
             // Extract and return the response text
-            if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
+            if (response.getStatusCode() == HttpStatus.OK) {
                 Map<String, Object> responseBody = response.getBody();
+                if (responseBody == null) {
+                    // Handle the case where the body is null even with an OK status
+                    return "Unable to get poker advice at this time - empty response from AI service.";
+                }
                 
                 // Check for error in response
                 if (responseBody.containsKey("error")) {
