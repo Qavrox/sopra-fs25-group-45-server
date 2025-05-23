@@ -27,8 +27,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.ZoneId; // Added for date conversion
-import java.util.Date;   // Added for date conversion
+import java.time.ZoneId; 
+import java.util.Date;   
 import java.util.List;
 
 /**
@@ -179,22 +179,12 @@ public class DTOMapperTest {
     assertEquals(user.getId(), userFriendDTO.getId());
     assertEquals(user.getUsername(), userFriendDTO.getUsername());
     assertEquals(user.getStatus(), userFriendDTO.getOnline());
-
-    // Corrected assertion for creationDate (line 206 in previous structure)
-    // Assuming UserFriendDTO.createdAt is java.util.Date based on error format
     assertNotNull(userFriendDTO.getCreatedAt(), "CreatedAt in DTO should not be null");
     if (userFriendDTO.getCreatedAt() instanceof java.util.Date) {
         java.util.Date utilDate = (java.util.Date) userFriendDTO.getCreatedAt();
         LocalDate actualCreatedAtDate = utilDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
         assertEquals(user.getCreationDate(), actualCreatedAtDate);
     } else {
-        // Fallback or fail if the type is not java.util.Date as error suggested
-        // This might happen if UserFriendDTO.createdAt is LocalDate or LocalDateTime
-        // If it's LocalDate:
-        // assertEquals(user.getCreationDate(), userFriendDTO.getCreatedAt());
-        // If it's LocalDateTime:
-        // assertEquals(user.getCreationDate(), ((LocalDateTime)userFriendDTO.getCreatedAt()).toLocalDate());
-        // For now, let's make it fail if not java.util.Date to highlight the assumption clearly
         assertTrue(userFriendDTO.getCreatedAt() instanceof java.util.Date, 
                    "UserFriendDTO.createdAt was expected to be java.util.Date but was: " + userFriendDTO.getCreatedAt().getClass().getName());
     }
@@ -241,7 +231,7 @@ public class DTOMapperTest {
     assertEquals(userIntermediate.getName(), userProfileDTOIntermediate.getDisplayName());
     assertEquals(userIntermediate.getUsername(), userProfileDTOIntermediate.getUsername());
     assertEquals(userIntermediate.getProfileImage(), userProfileDTOIntermediate.getAvatarUrl());
-    assertNotNull(userProfileDTOIntermediate.getExperienceLevel()); // Should not be null here
+    assertNotNull(userProfileDTOIntermediate.getExperienceLevel()); 
     assertEquals(userIntermediate.getexperienceLevel().toString(), userProfileDTOIntermediate.getExperienceLevel().toString()); // Enum.toString() vs DTO.String.toString()
     assertEquals(userIntermediate.getBirthday(), userProfileDTOIntermediate.getBirthday());
     assertEquals(userIntermediate.getCreationDate().atStartOfDay(), userProfileDTOIntermediate.getCreatedAt());
@@ -254,12 +244,12 @@ public class DTOMapperTest {
     userExpert.setUsername("expert@player");
     userExpert.setStatus(UserStatus.ONLINE);
     userExpert.setProfileImage(3);
-    // Assuming UserLevel.Expert exists. If not, replace with another valid UserLevel or handle appropriately.
+    
     try {
         userExpert.setexperienceLevel(UserLevel.valueOf("Expert"));
     } catch (IllegalArgumentException e) {
         System.err.println("Warning: UserLevel.Expert enum constant not found. Skipping setting 'Expert' level for test. Experience level will be null.");
-        userExpert.setexperienceLevel(null); // Default to null if "Expert" isn't a valid enum constant
+        userExpert.setexperienceLevel(null); 
     }
     userExpert.setBirthday(LocalDate.of(1985, 5, 15));
     userExpert.setCreationDate(LocalDate.of(2023, 2, 20));
@@ -286,18 +276,18 @@ public class DTOMapperTest {
     userNullExperience.setName("Another One");
     userNullExperience.setUsername("anotherone");
     userNullExperience.setStatus(UserStatus.OFFLINE);
-    userNullExperience.setProfileImage(0); // Explicitly 0, or let it default
-    userNullExperience.setexperienceLevel(null); // Test with null experienceLevel
-    userNullExperience.setBirthday(null); // Test with null birthday
-    userNullExperience.setCreationDate(null); // Test with null creationDate
+    userNullExperience.setProfileImage(0); 
+    userNullExperience.setexperienceLevel(null); 
+    userNullExperience.setBirthday(null); 
+    userNullExperience.setCreationDate(null); 
 
     UserProfileDTO userProfileDTONullExperience = DTOMapper.INSTANCE.convertEntityToUserProfileDTO(userNullExperience);
 
     assertEquals(userNullExperience.getId(), userProfileDTONullExperience.getId());
     assertEquals(userNullExperience.getName(), userProfileDTONullExperience.getDisplayName());
     assertEquals(userNullExperience.getUsername(), userProfileDTONullExperience.getUsername());
-    assertEquals(userNullExperience.getProfileImage(), userProfileDTONullExperience.getAvatarUrl()); // Will be 0
-    assertNull(userProfileDTONullExperience.getExperienceLevel()); // Should be null
+    assertEquals(userNullExperience.getProfileImage(), userProfileDTONullExperience.getAvatarUrl()); 
+    assertNull(userProfileDTONullExperience.getExperienceLevel()); 
     assertNull(userProfileDTONullExperience.getBirthday());
     assertNull(userProfileDTONullExperience.getCreatedAt());
     assertFalse(userProfileDTONullExperience.isOnline());
