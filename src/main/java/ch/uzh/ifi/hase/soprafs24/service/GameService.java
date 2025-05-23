@@ -679,6 +679,7 @@ public class GameService {
     }
 
     public List<Player> determineWinners(Long gameId) {
+        // Get game and players
         Game game = gameRepository.findByid(gameId);
         if (game == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found");
@@ -702,6 +703,11 @@ public class GameService {
         OddsCalculator.HandValue bestHandValue = null;
 
         for (Player player : players) {
+            // Skip players who have folded
+            if (player.getHasFolded()) {
+                continue;
+            }
+
             // Convert player's hand to Card objects
             List<Card> playerCards = new ArrayList<>();
             for (String cardStr : player.getHand()) {
@@ -728,7 +734,6 @@ public class GameService {
         }
 
         game.setWinners(winners);
-
         return winners;
     }
 
