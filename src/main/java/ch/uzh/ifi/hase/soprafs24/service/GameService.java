@@ -521,8 +521,10 @@ public class GameService {
             lastActivePlayer.setCredit(lastActivePlayer.getCredit() + game.getPot());
             recordGameResults(game, winners);
             game.setGameStatus(GameStatus.GAMEOVER);
+            
             gameRepository.save(game);
             gameRepository.flush();
+            
             return; // Exit early since game is over
         }
         
@@ -679,6 +681,7 @@ public class GameService {
     }
 
     public List<Player> determineWinners(Long gameId) {
+        // Get game and players
         Game game = gameRepository.findByid(gameId);
         if (game == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found");
@@ -752,6 +755,8 @@ public class GameService {
         }
 
         game.setWinners(winners);
+        gameRepository.save(game);
+        gameRepository.flush();
 
         return winners;
     }
