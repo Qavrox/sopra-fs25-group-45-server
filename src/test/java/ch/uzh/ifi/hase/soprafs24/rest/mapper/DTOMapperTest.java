@@ -19,6 +19,10 @@ import ch.uzh.ifi.hase.soprafs24.rest.dto.UserFriendDTO;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -128,18 +132,47 @@ public class DTOMapperTest {
     user.setUsername("firstname@lastname");
     user.setStatus(UserStatus.OFFLINE);
     user.setToken("1");
+    user.setProfileImage(1);
+    user.setBirthday(LocalDate.of(1995, 5, 5));
+    user.setCreationDate(LocalDate.now());
+    user.setexperienceLevel(UserLevel.Beginner);
 
     //when LoginResponseDTO is created
     LoginResponseDTO loginResponseDTO = DTOMapper.INSTANCE.convertEntityToLoginResponseDTO(user);
 
     //then
     assertEquals(user.getToken(), loginResponseDTO.getToken());
+    assertNotNull(loginResponseDTO.getUser());
+    assertEquals(user.getId(), (loginResponseDTO.getUser()).getId());
     assertEquals(user.getName(), (loginResponseDTO.getUser()).getDisplayName());
     assertEquals(user.getUsername(), loginResponseDTO.getUser().getUsername());
     assertEquals(user.getProfileImage(), (loginResponseDTO.getUser()).getAvatarUrl());
-    assertEquals(user.getCreationDate(), (loginResponseDTO.getUser()).getCreatedAt());
+    assertEquals(user.getCreationDate().atStartOfDay(), (loginResponseDTO.getUser()).getCreatedAt());
     assertEquals(user.getBirthday(), (loginResponseDTO.getUser()).getBirthday());
-    assertEquals(user.getexperienceLevel(), (loginResponseDTO.getUser()).getExperienceLevel());
+    assertEquals(user.getexperienceLevel().toString(), (loginResponseDTO.getUser()).getExperienceLevel().toString());
+    assertEquals(user.getStatus() == UserStatus.ONLINE, (loginResponseDTO.getUser()).isOnline());
+
+    // Test with null token and other optional fields
+    User userWithNulls = new User();
+    userWithNulls.setId(2L);
+    userWithNulls.setName("Another User");
+    userWithNulls.setUsername("anotheruser");
+    userWithNulls.setStatus(UserStatus.OFFLINE);
+    // token is null by default
+    // profileImage, birthday, creationDate, experienceLevel are null by default
+
+    LoginResponseDTO loginResponseDTONulls = DTOMapper.INSTANCE.convertEntityToLoginResponseDTO(userWithNulls);
+
+    assertNull(loginResponseDTONulls.getToken());
+    assertNotNull(loginResponseDTONulls.getUser());
+    assertEquals(userWithNulls.getId(), (loginResponseDTONulls.getUser()).getId());
+    assertEquals(userWithNulls.getName(), (loginResponseDTONulls.getUser()).getDisplayName());
+    assertEquals(userWithNulls.getUsername(), (loginResponseDTONulls.getUser()).getUsername());
+    assertEquals(0, (loginResponseDTONulls.getUser()).getAvatarUrl()); // Expect 0 if profileImage is default int (0)
+    assertNull((loginResponseDTONulls.getUser()).getCreatedAt());
+    assertNull((loginResponseDTONulls.getUser()).getBirthday());
+    assertNull((loginResponseDTONulls.getUser()).getExperienceLevel());
+    assertFalse((loginResponseDTONulls.getUser()).isOnline());
   }
 
   @Test
@@ -190,10 +223,15 @@ public class DTOMapperTest {
   public void testUserProfileDTOfromEntity() {
     //given User
     User user = new User();
+    user.setId(1L); // Set ID for completeness
     user.setName("Firstname Lastname");
     user.setUsername("firstname@lastname");
-    user.setStatus(UserStatus.OFFLINE);
+    user.setStatus(UserStatus.ONLINE); // Test with ONLINE status
     user.setToken("1");
+    user.setProfileImage(2);
+    user.setexperienceLevel(UserLevel.Intermediate);
+    user.setBirthday(LocalDate.of(1990, 1, 1));
+    user.setCreationDate(LocalDate.of(2024, 1, 1));
 
     //when UserProfileDTO is created
     UserProfileDTO userProfileDTO = DTOMapper.INSTANCE.convertEntityToUserProfileDTO(user);
@@ -203,10 +241,29 @@ public class DTOMapperTest {
     assertEquals(user.getName(), userProfileDTO.getDisplayName());
     assertEquals(user.getUsername(), userProfileDTO.getUsername());
     assertEquals(user.getProfileImage(), userProfileDTO.getAvatarUrl());
-    assertEquals(user.getexperienceLevel(), userProfileDTO.getExperienceLevel());
+    assertEquals(user.getexperienceLevel().toString(), userProfileDTO.getExperienceLevel().toString());
     assertEquals(user.getBirthday(), userProfileDTO.getBirthday());
-    assertEquals(user.getCreationDate(), userProfileDTO.getCreatedAt());
-    assertEquals(user.getStatus() == UserStatus.ONLINE, userProfileDTO.isOnline());
+    assertEquals(user.getCreationDate().atStartOfDay(), userProfileDTO.getCreatedAt());
+    assertTrue(userProfileDTO.isOnline());
+
+    // Test with OFFLINE status and null optional values
+    User userOfflineNulls = new User();
+    userOfflineNulls.setId(2L);
+    userOfflineNulls.setName("Another One");
+    userOfflineNulls.setUsername("anotherone");
+    userOfflineNulls.setStatus(UserStatus.OFFLINE);
+    // profileImage, experienceLevel, birthday, creationDate are null
+
+    UserProfileDTO userProfileDTOOfflineNulls = DTOMapper.INSTANCE.convertEntityToUserProfileDTO(userOfflineNulls);
+
+    assertEquals(userOfflineNulls.getId(), userProfileDTOOfflineNulls.getId());
+    assertEquals(userOfflineNulls.getName(), userProfileDTOOfflineNulls.getDisplayName());
+    assertEquals(userOfflineNulls.getUsername(), userProfileDTOOfflineNulls.getUsername());
+    assertEquals(0, userProfileDTOOfflineNulls.getAvatarUrl()); // Expect 0 if profileImage is default int (0)
+    assertNull(userProfileDTOOfflineNulls.getExperienceLevel());
+    assertNull(userProfileDTOOfflineNulls.getBirthday());
+    assertNull(userProfileDTOOfflineNulls.getCreatedAt());
+    assertFalse(userProfileDTOOfflineNulls.isOnline());
   }
 
   @Test
@@ -257,6 +314,42 @@ public class DTOMapperTest {
     assertEquals(gameHistoryDTO.getWinnings(), gameHistory.getWinnings());
     assertEquals(gameHistoryDTO.getOtherPlayerIds(), gameHistory.getOtherPlayerIds());
     assertEquals(gameHistoryDTO.getPlayedAt(), gameHistory.getPlayedAt());
+  }
+
+  @Test
+  public void testConvertEntityListToUserGetDTOList_success() {
+    // create Users
+    User user1 = new User();
+    user1.setName("User One");
+    user1.setUsername("userone");
+    user1.setStatus(UserStatus.ONLINE);
+    user1.setToken("token1");
+
+    User user2 = new User();
+    user2.setName("User Two");
+    user2.setUsername("usertwo");
+    user2.setStatus(UserStatus.OFFLINE);
+    user2.setToken("token2");
+
+    List<User> users = List.of(user1, user2);
+
+    // MAP -> Create List<UserGetDTO>
+    List<UserGetDTO> userGetDTOs = DTOMapper.INSTANCE.convertEntityListToUserGetDTOList(users);
+
+    // check content
+    assertEquals(2, userGetDTOs.size());
+
+    UserGetDTO userGetDTO1 = userGetDTOs.get(0);
+    assertEquals(user1.getId(), userGetDTO1.getId());
+    assertEquals(user1.getName(), userGetDTO1.getName());
+    assertEquals(user1.getUsername(), userGetDTO1.getUsername());
+    assertEquals(user1.getStatus() == UserStatus.ONLINE, userGetDTO1.getOnline());
+
+    UserGetDTO userGetDTO2 = userGetDTOs.get(1);
+    assertEquals(user2.getId(), userGetDTO2.getId());
+    assertEquals(user2.getName(), userGetDTO2.getName());
+    assertEquals(user2.getUsername(), userGetDTO2.getUsername());
+    assertEquals(user2.getStatus() == UserStatus.ONLINE, userGetDTO2.getOnline());
   }
 }
 
