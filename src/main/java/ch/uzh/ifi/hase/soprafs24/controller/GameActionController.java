@@ -158,7 +158,7 @@ public class GameActionController {
         }
 
         // Get winners
-        List<Player> winners = game.getWinners();
+        List<Player> winners = gameService.determineWinners(gameId);
         if (winners.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "No winners found");
         }
