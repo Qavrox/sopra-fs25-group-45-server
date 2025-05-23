@@ -702,6 +702,25 @@ public class GameService {
         List<Player> winners = new ArrayList<>();
         OddsCalculator.HandValue bestHandValue = null;
 
+        // Count active players (not folded)
+        int activePlayers = 0;
+        for (Player player : players) {
+            if (!player.getHasFolded()) {
+                activePlayers++;
+            }
+        }
+
+        // If only one player is active, they are the winner
+        if (activePlayers == 1) {
+            for (Player player : players) {
+                if (!player.getHasFolded()) {
+                    winners.add(player);
+                    game.setWinners(winners);
+                    return winners;
+                }
+            }
+        }
+
         for (Player player : players) {
             // Skip players who have folded
             if (player.getHasFolded()) {
@@ -942,8 +961,12 @@ public class GameService {
             ResponseEntity<Map> response = restTemplate.postForEntity(url, entity, Map.class);
             
             // Extract and return the response text
-            if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
+            if (response.getStatusCode() == HttpStatus.OK) {
                 Map<String, Object> responseBody = response.getBody();
+                if (responseBody == null) {
+                    // Handle the case where the body is null even with an OK status
+                    return "Unable to get poker advice at this time - empty response from AI service.";
+                }
                 
                 // Check for error in response
                 if (responseBody.containsKey("error")) {
