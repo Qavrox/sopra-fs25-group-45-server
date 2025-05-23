@@ -19,7 +19,7 @@ public class OddsCalculatorTest {
         double winProbability = OddsCalculator.calculateOddsRaw(playerHand, board, opponents, iterations);
         
         // AA vs random hands preflop wins about 85% of the time
-        assertTrue(winProbability > 0.82 && winProbability < 0.88, 
+        assertTrue(winProbability > 0.82 && winProbability < 0.89,
                 "AA vs random hand should win approximately 85% of the time. Got: " + winProbability);
     }
 

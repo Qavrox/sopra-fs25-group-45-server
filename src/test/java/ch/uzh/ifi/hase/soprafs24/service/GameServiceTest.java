@@ -442,6 +442,7 @@ public class GameServiceTest {
         assertEquals(games, publicGames);
     }
 
+    @Test
     void testgetAllPublicGamesInvalidToken(){
         // when
         assertThrows(ResponseStatusException.class, () -> {
@@ -939,14 +940,6 @@ public class GameServiceTest {
         });
     }
 
-
-    }
-
-
-
-
-
-    /*
     @Test
     void testJoinFullGame() {
         // Setup a game that is already full
@@ -958,22 +951,40 @@ public class GameServiceTest {
         fullGame.setStartCredit(1000L);
         fullGame.setGameStatus(GameStatus.READY);
         
-        List<Player> players = new ArrayList<>();
-        players.add(new Player(1L, new ArrayList<>(), fullGame));
-        players.add(new Player(2L, new ArrayList<>(), fullGame));
-        players.add(new Player(3L, new ArrayList<>(), fullGame)); // Game is full with 3 players
-        fullGame.setPlayers(players);
+        List<Player> playersInGame = new ArrayList<>();
+        User user1 = new User(); user1.setId(1L);
+        User user2 = new User(); user2.setId(2L);
+        User user3 = new User(); user3.setId(3L);
+
+        playersInGame.add(new Player(user1.getId(), new ArrayList<>(), fullGame));
+        playersInGame.add(new Player(user2.getId(), new ArrayList<>(), fullGame));
+        playersInGame.add(new Player(user3.getId(), new ArrayList<>(), fullGame));
+        fullGame.setPlayers(playersInGame);
+        fullGame.setNumberOfPlayers(playersInGame.size());
         
+        User joiningUser = new User(); 
+        joiningUser.setId(4L); 
+        String specificToken = "joining-user-token";
+        joiningUser.setToken(specificToken);
+
+        // Mock userRepository.findAll() to include the joiningUser
+        // This is crucial if the checkTokenValidity mock isn't behaving as expected.
+        List<User> allUsers = new ArrayList<>(Collections.singletonList(this.user)); // 'this.user' is the global one from setup
+        allUsers.add(joiningUser);
+        when(userRepository.findAll()).thenReturn(allUsers);
+
+        // Explicitly mock authenticator for this specific token as a safeguard
+        Mockito.doNothing().when(authenticator).checkTokenValidity(specificToken);
+        when(userRepository.findByToken(specificToken)).thenReturn(joiningUser); // Still useful for other parts of joinGame
         when(gameRepository.findByid(6L)).thenReturn(fullGame);
-        when(userRepository.findByToken(user.getToken())).thenReturn(user);
         
-        // Execute and verify
         Exception exception = assertThrows(ResponseStatusException.class, () -> {
-            gameService.joinGame(6L, user.getToken(), null);
+            gameService.joinGame(6L, joiningUser.getToken(), null);
         });
         
-        assertTrue(exception.getMessage().contains("Game is full"));
+        String actualReason = ((ResponseStatusException) exception).getReason();
+        assertEquals("Game is full. Entry to game DENIED.", actualReason); 
         verify(gameRepository, never()).save(any(Game.class));
     }
-         */
+}
 
