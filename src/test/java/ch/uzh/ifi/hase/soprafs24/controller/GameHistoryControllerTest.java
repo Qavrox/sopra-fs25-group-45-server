@@ -107,7 +107,35 @@ public class GameHistoryControllerTest {
         verify(userService).getUserByToken(eq(VALID_HEADER_TOKEN));
     }
 
+    @Test
+    public void getUserGameHistory_invalidToken_throwsUnauthorized() throws Exception {
+        doThrow(new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid token"))
+                .when(userService).getUserByToken(eq(INVALID_HEADER_TOKEN));
 
+        MockHttpServletRequestBuilder getRequest = get("/users/{userId}/history", mockUserId)
+                .header("Authorization", INVALID_HEADER_TOKEN)
+                .contentType(MediaType.APPLICATION_JSON);
+
+        mockMvc.perform(getRequest)
+                .andExpect(status().isUnauthorized());
+        verify(userService).getUserByToken(eq(INVALID_HEADER_TOKEN));
+    }
+
+    @Test
+    public void getUserGameHistory_emptyHistory_returnsOkWithEmptyList() throws Exception {
+        given(userService.getUserByToken(eq(VALID_HEADER_TOKEN))).willReturn(mockUser);
+        given(gameHistoryService.getUserGameHistory(mockUserId)).willReturn(Collections.emptyList());
+
+        MockHttpServletRequestBuilder getRequest = get("/users/{userId}/history", mockUserId)
+                .header("Authorization", VALID_HEADER_TOKEN)
+                .contentType(MediaType.APPLICATION_JSON);
+
+        mockMvc.perform(getRequest)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(0)));
+        verify(userService).getUserByToken(eq(VALID_HEADER_TOKEN));
+        verify(gameHistoryService).getUserGameHistory(mockUserId);
+    }
 
     // Test for getUserGameHistoryByTimeRange
     @Test
@@ -135,6 +163,50 @@ public class GameHistoryControllerTest {
         verify(gameHistoryService).getUserGameHistoryByTimeRange(mockUserId, startDate, endDate); 
     }
 
+    @Test
+    public void getUserGameHistoryByTimeRange_invalidToken_throwsUnauthorized() throws Exception {
+        LocalDateTime startDate = LocalDateTime.now().minusDays(5);
+        LocalDateTime endDate = LocalDateTime.now().minusDays(1);
+        String startDateStr = startDate.format(DateTimeFormatter.ISO_DATE_TIME);
+        String endDateStr = endDate.format(DateTimeFormatter.ISO_DATE_TIME);
+
+        doThrow(new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid token"))
+                .when(userService).getUserByToken(eq(INVALID_HEADER_TOKEN));
+
+        MockHttpServletRequestBuilder getRequest = get("/users/{userId}/history/range", mockUserId)
+                .param("startDateStr", startDateStr)
+                .param("endDateStr", endDateStr)
+                .header("Authorization", INVALID_HEADER_TOKEN)
+                .contentType(MediaType.APPLICATION_JSON);
+
+        mockMvc.perform(getRequest)
+                .andExpect(status().isUnauthorized());
+        verify(userService).getUserByToken(eq(INVALID_HEADER_TOKEN));
+    }
+
+    @Test
+    public void getUserGameHistoryByTimeRange_emptyHistory_returnsOkWithEmptyList() throws Exception {
+        given(userService.getUserByToken(eq(VALID_HEADER_TOKEN))).willReturn(mockUser);
+        LocalDateTime startDate = LocalDateTime.now().minusDays(5);
+        LocalDateTime endDate = LocalDateTime.now().minusDays(1);
+        String startDateStr = startDate.format(DateTimeFormatter.ISO_DATE_TIME);
+        String endDateStr = endDate.format(DateTimeFormatter.ISO_DATE_TIME);
+
+        given(gameHistoryService.getUserGameHistoryByTimeRange(mockUserId, startDate, endDate))
+                .willReturn(Collections.emptyList());
+
+        MockHttpServletRequestBuilder getRequest = get("/users/{userId}/history/range", mockUserId)
+                .param("startDateStr", startDateStr)
+                .param("endDateStr", endDateStr)
+                .header("Authorization", VALID_HEADER_TOKEN)
+                .contentType(MediaType.APPLICATION_JSON);
+
+        mockMvc.perform(getRequest)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(0)));
+        verify(userService).getUserByToken(eq(VALID_HEADER_TOKEN));
+        verify(gameHistoryService).getUserGameHistoryByTimeRange(mockUserId, startDate, endDate);
+    }
 
     // Test for getUserStatistics
     @Test
@@ -196,6 +268,34 @@ public class GameHistoryControllerTest {
     }
 
     @Test
+    public void getUserStatistics_invalidToken_throwsUnauthorized() throws Exception {
+        doThrow(new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid token"))
+                .when(userService).getUserByToken(eq(INVALID_HEADER_TOKEN));
+
+        MockHttpServletRequestBuilder getRequest = get("/users/{userId}/statistics", mockUserId)
+                .header("Authorization", INVALID_HEADER_TOKEN)
+                .contentType(MediaType.APPLICATION_JSON);
+
+        mockMvc.perform(getRequest)
+                .andExpect(status().isUnauthorized());
+        verify(userService).getUserByToken(eq(INVALID_HEADER_TOKEN));
+    }
+
+    @Test
+    public void getUserStatistics_onlyEndDate_throwsBadRequest() throws Exception {
+        given(userService.getUserByToken(eq(VALID_HEADER_TOKEN))).willReturn(mockUser);
+        String endDateStr = LocalDateTime.now().minusDays(1).format(DateTimeFormatter.ISO_DATE_TIME);
+
+        MockHttpServletRequestBuilder getRequest = get("/users/{userId}/statistics", mockUserId)
+                .param("endDateStr", endDateStr)
+                .header("Authorization", VALID_HEADER_TOKEN)
+                .contentType(MediaType.APPLICATION_JSON);
+        mockMvc.perform(getRequest)
+                .andExpect(status().isBadRequest());
+        verify(userService).getUserByToken(eq(VALID_HEADER_TOKEN));
+    }
+
+    @Test
     public void getUserStatistics_invalidDateRangeFormat_throwsBadRequest() throws Exception {
         // This method in controller has try-catch for date parsing, so it should return 400
         given(userService.getUserByToken(eq(VALID_HEADER_TOKEN))).willReturn(mockUser); 
@@ -209,6 +309,26 @@ public class GameHistoryControllerTest {
         verify(userService).getUserByToken(eq(VALID_HEADER_TOKEN));
     }
 
+    @Test
+    public void getUserStatistics_noStatsFound_returnsEmptyStats() throws Exception {
+        given(userService.getUserByToken(eq(VALID_HEADER_TOKEN))).willReturn(mockUser);
+        UserStatisticsDTO emptyStats = new UserStatisticsDTO(); // Assuming default constructor zeroes fields or they are nullable
+        // Explicitly set fields to expected "empty" values if necessary, e.g.:
+        // emptyStats.setGamesPlayed(0L);
+        // emptyStats.setTotalWinnings(0L);
+        // etc.
+        given(gameHistoryService.getUserStatistics(mockUserId, null, null)).willReturn(emptyStats);
+
+        MockHttpServletRequestBuilder getRequest = get("/users/{userId}/statistics", mockUserId)
+                .header("Authorization", VALID_HEADER_TOKEN)
+                .contentType(MediaType.APPLICATION_JSON);
+        mockMvc.perform(getRequest)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.gamesPlayed").isEmpty()) // Expect null or not present
+                .andExpect(jsonPath("$.totalWinnings").isEmpty()); // Expect null or not present
+        verify(userService).getUserByToken(eq(VALID_HEADER_TOKEN));
+        verify(gameHistoryService).getUserStatistics(mockUserId, null, null);
+    }
 
     // Test for getLeaderboardByWinnings
     @Test
@@ -223,6 +343,22 @@ public class GameHistoryControllerTest {
         mockMvc.perform(getRequest)
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(1)));
+        verify(userService).getUserByToken(eq(VALID_HEADER_TOKEN));
+        verify(gameHistoryService).getLeaderboardByWinnings();
+    }
+
+    @Test
+    public void getLeaderboardByWinnings_emptyLeaderboard_returnsOkWithEmptyList() throws Exception {
+        given(userService.getUserByToken(eq(VALID_HEADER_TOKEN))).willReturn(mockUser);
+        given(gameHistoryService.getLeaderboardByWinnings()).willReturn(Collections.emptyList());
+
+        MockHttpServletRequestBuilder getRequest = get("/leaderboard/winnings")
+                .header("Authorization", VALID_HEADER_TOKEN)
+                .contentType(MediaType.APPLICATION_JSON);
+
+        mockMvc.perform(getRequest)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(0)));
         verify(userService).getUserByToken(eq(VALID_HEADER_TOKEN));
         verify(gameHistoryService).getLeaderboardByWinnings();
     }
@@ -259,7 +395,23 @@ public class GameHistoryControllerTest {
         verify(gameHistoryService).getLeaderboardByWinRate();
     }
 
-     @Test
+    @Test
+    public void getLeaderboardByWinRate_emptyLeaderboard_returnsOkWithEmptyList() throws Exception {
+        given(userService.getUserByToken(eq(VALID_HEADER_TOKEN))).willReturn(mockUser);
+        given(gameHistoryService.getLeaderboardByWinRate()).willReturn(Collections.emptyList());
+
+        MockHttpServletRequestBuilder getRequest = get("/leaderboard/winrate")
+                .header("Authorization", VALID_HEADER_TOKEN)
+                .contentType(MediaType.APPLICATION_JSON);
+
+        mockMvc.perform(getRequest)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(0)));
+        verify(userService).getUserByToken(eq(VALID_HEADER_TOKEN));
+        verify(gameHistoryService).getLeaderboardByWinRate();
+    }
+
+    @Test
     public void getLeaderboardByWinRate_invalidToken_throwsUnauthorized() throws Exception {
         doThrow(new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid token from service"))
                 .when(userService).getUserByToken(eq(INVALID_HEADER_TOKEN));
@@ -304,6 +456,21 @@ public class GameHistoryControllerTest {
         verify(userService).getUserByToken(eq(UNAUTH_HEADER_TOKEN));
     }
 
+    @Test
+    public void getFriendLeaderboardByWinnings_emptyLeaderboard_returnsOkWithEmptyList() throws Exception {
+        given(userService.getUserByToken(eq(VALID_HEADER_TOKEN))).willReturn(mockUser);
+        given(gameHistoryService.getFriendLeaderboardByWinnings(mockUserId)).willReturn(Collections.emptyList());
+
+        MockHttpServletRequestBuilder getRequest = get("/leaderboard/friends/winnings")
+                .header("Authorization", VALID_HEADER_TOKEN)
+                .contentType(MediaType.APPLICATION_JSON);
+
+        mockMvc.perform(getRequest)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(0)));
+        verify(userService).getUserByToken(eq(VALID_HEADER_TOKEN));
+        verify(gameHistoryService).getFriendLeaderboardByWinnings(mockUserId);
+    }
 
     // Test for getFriendLeaderboardByWinRate
     @Test
@@ -332,5 +499,21 @@ public class GameHistoryControllerTest {
         mockMvc.perform(getRequest)
                 .andExpect(status().isUnauthorized());
         verify(userService).getUserByToken(eq(UNAUTH_HEADER_TOKEN));
+    }
+
+    @Test
+    public void getFriendLeaderboardByWinRate_emptyLeaderboard_returnsOkWithEmptyList() throws Exception {
+        given(userService.getUserByToken(eq(VALID_HEADER_TOKEN))).willReturn(mockUser);
+        given(gameHistoryService.getFriendLeaderboardByWinRate(mockUserId)).willReturn(Collections.emptyList());
+
+        MockHttpServletRequestBuilder getRequest = get("/leaderboard/friends/winrate")
+                .header("Authorization", VALID_HEADER_TOKEN)
+                .contentType(MediaType.APPLICATION_JSON);
+
+        mockMvc.perform(getRequest)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(0)));
+        verify(userService).getUserByToken(eq(VALID_HEADER_TOKEN));
+        verify(gameHistoryService).getFriendLeaderboardByWinRate(mockUserId);
     }
 }
