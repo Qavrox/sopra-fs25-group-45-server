@@ -357,14 +357,11 @@ public class GameService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found");
         }
         
-        // Find the player
+        // Find the player with the given userId in this game
         Player player = null;
-        int playerIndex = -1;
-        for (int i = 0; i < game.getPlayers().size(); i++) {
-            Player p = game.getPlayers().get(i);
+        for (Player p : game.getPlayers()) {
             if (p.getUserId().equals(userId)) {
                 player = p;
-                playerIndex = i;
                 break;
             }
         }
@@ -373,8 +370,13 @@ public class GameService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Player not found in this game");
         }
         
-        // Check if it's the player's turn
-        if (playerIndex != game.getCurrentPlayerIndex()) {
+        // Check if it's this player's turn
+        if (game.getCurrentPlayerIndex() < 0 || game.getCurrentPlayerIndex() >= game.getPlayers().size()) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Invalid current player index");
+        }
+        
+        Player currentPlayer = game.getPlayers().get(game.getCurrentPlayerIndex());
+        if (!currentPlayer.getUserId().equals(userId)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "It's not your turn");
         }
         
@@ -426,7 +428,7 @@ public class GameService {
                 player.setCurrentBet(amount);
                 player.setHasActed(true);
                 player.setLastAction(PlayerAction.BET);
-                game.setLastRaisePlayerIndex(playerIndex);
+                game.setLastRaisePlayerIndex(game.getCurrentPlayerIndex());
                 game.setCallAmount(amount);
                 break;
                 
@@ -445,7 +447,7 @@ public class GameService {
                 player.setCurrentBet(amount);
                 player.setHasActed(true);
                 player.setLastAction(PlayerAction.RAISE);
-                game.setLastRaisePlayerIndex(playerIndex);
+                game.setLastRaisePlayerIndex(game.getCurrentPlayerIndex());
                 game.setCallAmount(amount);
                 break;
                 
@@ -469,7 +471,7 @@ public class GameService {
             
                 if (newTotalBet > highestBet) {
                     game.setCallAmount(newTotalBet);
-                    game.setLastRaisePlayerIndex(playerIndex);
+                    game.setLastRaisePlayerIndex(game.getCurrentPlayerIndex());
                 }
                 break;
                 
@@ -480,6 +482,10 @@ public class GameService {
         // Save player state
         playerRepository.save(player);
         playerRepository.flush();
+
+        // Flush so the current player's action is reflected in the game
+        gameRepository.save(game);
+        gameRepository.flush();
         
         // Check if betting round is complete
         if (game.isBettingRoundComplete()) {
@@ -506,6 +512,7 @@ public class GameService {
         // Check if only one player remains (everyone else folded)
         int activePlayers = 0;
         Player lastActivePlayer = null;
+        
         for (Player player : game.getPlayers()) {
             if (!player.getHasFolded()) {
                 activePlayers++;
@@ -518,7 +525,10 @@ public class GameService {
             List<Player> winners = new ArrayList<>();
             winners.add(lastActivePlayer);
             game.setWinners(winners);
+
+            // Last Active player is the winner
             lastActivePlayer.setCredit(lastActivePlayer.getCredit() + game.getPot());
+
             recordGameResults(game, winners);
             game.setGameStatus(GameStatus.GAMEOVER);
             
@@ -689,7 +699,31 @@ public class GameService {
 
         List<Player> players = game.getPlayers();
         List<String> communityCards = game.getCommunityCards();
+
+        // Count active players (not folded)
+        int activePlayers = 0;
+        Player lastActivePlayer = null;
+        for (Player player : players) {
+            if (!player.getHasFolded()) {
+                activePlayers++;
+                lastActivePlayer = player;
+            }
+        }
+
+        // If only one player is active, they are the winner
+        if (activePlayers == 1) {
+            List<Player> winners = new ArrayList<>();
+            winners.add(lastActivePlayer);
+            game.setWinners(winners);
+            
+            gameRepository.save(game);
+            gameRepository.flush();
+            
+            return winners;
+        }
         
+        // If game ended before all community cards were dealt (early fold), 
+        // but we still have multiple active players, we need community cards to determine winner
         if (communityCards.size() < 5) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Not enough community cards to determine winner");
         }
@@ -703,25 +737,6 @@ public class GameService {
         // Evaluate each player's hand
         List<Player> winners = new ArrayList<>();
         OddsCalculator.HandValue bestHandValue = null;
-
-        // Count active players (not folded)
-        int activePlayers = 0;
-        for (Player player : players) {
-            if (!player.getHasFolded()) {
-                activePlayers++;
-            }
-        }
-
-        // If only one player is active, they are the winner
-        if (activePlayers == 1) {
-            for (Player player : players) {
-                if (!player.getHasFolded()) {
-                    winners.add(player);
-                    game.setWinners(winners);
-                    return winners;
-                }
-            }
-        }
 
         for (Player player : players) {
             // Skip players who have folded

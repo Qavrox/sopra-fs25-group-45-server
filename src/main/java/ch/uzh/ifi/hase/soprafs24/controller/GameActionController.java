@@ -74,15 +74,15 @@ public class GameActionController {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found");
         }
 
-        boolean isUserPlayer = false;
+        boolean isCurrentUser = false;
         for (Player player : game.getPlayers()) {
             if (player.getUserId().equals(playerActionDTO.getUserId())) {
-                isUserPlayer = true;
+                isCurrentUser = true;
                 break;
             }
         }
 
-        if (!isUserPlayer) {
+        if (!isCurrentUser) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You can only perform actions for yourself");
         }
 
@@ -90,7 +90,8 @@ public class GameActionController {
                 gameId,
                 playerActionDTO.getUserId(),
                 playerActionDTO.getAction(),
-                playerActionDTO.getAmount());
+                playerActionDTO.getAmount()
+        );
         
         GameGetDTO gameGetDTO = DTOMapper.INSTANCE.convertEntityToGameGetDTO(result);
         return gameGetDTO;
@@ -157,8 +158,13 @@ public class GameActionController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Game is not finished yet");
         }
 
-        // Get winners
+        // Get winners - use existing winners if available, otherwise determine them
         List<Player> winners = game.getWinners();
+        if (winners == null || winners.isEmpty()) {
+            winners = gameService.determineWinners(gameId);
+        }
+        
+        System.err.println("Winners: " + winners);
         if (winners.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "No winners found");
         }

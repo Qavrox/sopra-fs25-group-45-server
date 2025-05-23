@@ -91,6 +91,9 @@ public class PlayerActionServiceTest {
         when(gameRepository.findByid(1L)).thenReturn(testGame);
         when(gameRepository.save(any(Game.class))).thenReturn(testGame);
         when(playerRepository.save(any(Player.class))).thenAnswer(i -> i.getArguments()[0]);
+        when(playerRepository.findByid(1L)).thenReturn(player1);
+        when(playerRepository.findByid(2L)).thenReturn(player2);
+        when(playerRepository.findByid(3L)).thenReturn(player3);
         when(gameHistoryService.recordGameResult(any(), any(), any(), any(), any())).thenReturn(null);
 
     }

@@ -78,6 +78,25 @@ public class GameServiceResultsTest {
         assertTrue(winners.size() > 0, "Should have at least one winner");
         assertEquals(player1.getUserId(), winners.get(0).getUserId(), "Player 1 should win with a flush");
     }
+
+    @Test
+    public void testWinnersListContainsOnlyWinners() {
+        // Given the setup in @BeforeEach where player1 has a flush and player2 has a pair
+        
+        // When determining winners
+        List<Player> winners = gameService.determineWinners(1L);
+        
+        // Then only one winner should be returned (not all players)
+        assertEquals(1, winners.size(), "Should have exactly one winner");
+        assertEquals(player1.getUserId(), winners.get(0).getUserId(), "Player 1 should be the only winner");
+        
+        // Verify that the game's winners list is properly set by checking the game directly
+        // The winners should be stored in the database after calling determineWinners
+        Game updatedGame = gameRepository.findByid(1L);
+        List<Player> gameWinners = updatedGame.getWinners();
+        assertEquals(1, gameWinners.size(), "Game should have exactly one winner stored");
+        assertEquals(player1.getUserId(), gameWinners.get(0).getUserId(), "Game winner should be player 1");
+    }
     
     @Test
     public void testGetHandDescription_verifyNotNull() {
