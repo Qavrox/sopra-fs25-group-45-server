@@ -829,10 +829,13 @@ public class GameService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You are not the creator of the game. You cannot delete the game.");
         }
 
-        // clear players
+        // Clear winners first to avoid foreign key constraint issues
+        game.getWinners().clear();
+        
+        // Then clear players
         game.getPlayers().clear();
 
-        // Archieve the the game
+        // Archive the game
         game.setStatus(GameStatus.ARCHIVED);
         gameRepository.save(game);
         gameRepository.flush();
