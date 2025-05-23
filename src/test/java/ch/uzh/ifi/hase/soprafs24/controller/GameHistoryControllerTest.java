@@ -164,6 +164,27 @@ public class GameHistoryControllerTest {
     }
 
     @Test
+    public void getUserGameHistoryByTimeRange_userMismatch_throwsForbidden() throws Exception {
+        Long otherUserId = 2L;
+        given(userService.getUserByToken(eq(VALID_HEADER_TOKEN))).willReturn(mockUser);
+
+        LocalDateTime startDate = LocalDateTime.now().minusDays(5);
+        LocalDateTime endDate = LocalDateTime.now().minusDays(1);
+        String startDateStr = startDate.format(DateTimeFormatter.ISO_DATE_TIME);
+        String endDateStr = endDate.format(DateTimeFormatter.ISO_DATE_TIME);
+
+        MockHttpServletRequestBuilder getRequest = get("/users/{userId}/history/range", otherUserId)
+                .param("startDateStr", startDateStr)
+                .param("endDateStr", endDateStr)
+                .header("Authorization", VALID_HEADER_TOKEN)
+                .contentType(MediaType.APPLICATION_JSON);
+
+        mockMvc.perform(getRequest)
+                .andExpect(status().isForbidden());
+        verify(userService).getUserByToken(eq(VALID_HEADER_TOKEN));
+    }
+
+    @Test
     public void getUserGameHistoryByTimeRange_invalidToken_throwsUnauthorized() throws Exception {
         LocalDateTime startDate = LocalDateTime.now().minusDays(5);
         LocalDateTime endDate = LocalDateTime.now().minusDays(1);
@@ -206,6 +227,42 @@ public class GameHistoryControllerTest {
                 .andExpect(jsonPath("$", hasSize(0)));
         verify(userService).getUserByToken(eq(VALID_HEADER_TOKEN));
         verify(gameHistoryService).getUserGameHistoryByTimeRange(mockUserId, startDate, endDate);
+    }
+
+    @Test
+    public void getUserGameHistoryByTimeRange_invalidStartDate_throwsBadRequest() throws Exception {
+        given(userService.getUserByToken(eq(VALID_HEADER_TOKEN))).willReturn(mockUser);
+        String invalidStartDateStr = "not-a-date";
+        String endDateStr = LocalDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME);
+
+        MockHttpServletRequestBuilder getRequest = get("/users/{userId}/history/range", mockUserId)
+                .param("startDateStr", invalidStartDateStr)
+                .param("endDateStr", endDateStr)
+                .header("Authorization", VALID_HEADER_TOKEN)
+                .contentType(MediaType.APPLICATION_JSON);
+
+        mockMvc.perform(getRequest)
+                .andExpect(status().isBadRequest());
+        // No need to verify userService.getUserByToken if Spring handles date parsing error before controller method body
+        // However, the current controller code does token check first, then date parsing.
+        verify(userService).getUserByToken(eq(VALID_HEADER_TOKEN));
+    }
+
+    @Test
+    public void getUserGameHistoryByTimeRange_invalidEndDate_throwsBadRequest() throws Exception {
+        given(userService.getUserByToken(eq(VALID_HEADER_TOKEN))).willReturn(mockUser);
+        String startDateStr = LocalDateTime.now().minusDays(5).format(DateTimeFormatter.ISO_DATE_TIME);
+        String invalidEndDateStr = "not-a-date-either";
+
+        MockHttpServletRequestBuilder getRequest = get("/users/{userId}/history/range", mockUserId)
+                .param("startDateStr", startDateStr)
+                .param("endDateStr", invalidEndDateStr)
+                .header("Authorization", VALID_HEADER_TOKEN)
+                .contentType(MediaType.APPLICATION_JSON);
+
+        mockMvc.perform(getRequest)
+                .andExpect(status().isBadRequest());
+        verify(userService).getUserByToken(eq(VALID_HEADER_TOKEN));
     }
 
     // Test for getUserStatistics
@@ -328,6 +385,20 @@ public class GameHistoryControllerTest {
                 .andExpect(jsonPath("$.totalWinnings").isEmpty()); // Expect null or not present
         verify(userService).getUserByToken(eq(VALID_HEADER_TOKEN));
         verify(gameHistoryService).getUserStatistics(mockUserId, null, null);
+    }
+
+    @Test
+    public void getUserStatistics_userMismatch_throwsForbidden() throws Exception {
+        Long otherUserId = 2L;
+        given(userService.getUserByToken(eq(VALID_HEADER_TOKEN))).willReturn(mockUser); // mockUser.getId() is mockUserId (1L)
+
+        MockHttpServletRequestBuilder getRequest = get("/users/{userId}/statistics", otherUserId) // Requesting for otherUserId
+                .header("Authorization", VALID_HEADER_TOKEN) // Token is for mockUserId
+                .contentType(MediaType.APPLICATION_JSON);
+
+        mockMvc.perform(getRequest)
+                .andExpect(status().isForbidden());
+        verify(userService).getUserByToken(eq(VALID_HEADER_TOKEN));
     }
 
     // Test for getLeaderboardByWinnings
